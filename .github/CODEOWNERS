@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2025 hexaTune LLC
+# SPDX-License-Identifier: MIT
+
+# Default owner
+* @husamettinarabaci
+
+# Module-specific owners
+
+## Firmware
+/firmware/    @husamettinarabaci
+
+## Hardware
+/hardware/    @husamettinarabaci
+
+## Mechanic
+/mechanic/  @husamettinarabaci
+
+## Documentation
+/docs/                  @husamettinarabaci
+
+## Tests
+/integration-tests/     @husamettinarabaci
+
+## Benchmarks
+/benchmarks/            @husamettinarabaci
+
+## Examples
+/examples/              @husamettinarabaci
+
+## Scripts
+/scripts/               @husamettinarabaci
+
+## GitHub
+/.github/               @husamettinarabaci
+
