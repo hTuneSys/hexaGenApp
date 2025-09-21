@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2025 hexaTune LLC
+# SPDX-License-Identifier: MIT
+
+name: 🧐 Commit Lint
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  commitlint:
+    name: Commit Lint (hexaGenApp)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Lint commits
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlintrc.yml
+          failOnWarnings: true
