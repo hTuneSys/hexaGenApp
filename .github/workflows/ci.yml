@@ -1,72 +1,63 @@
 # SPDX-FileCopyrightText: 2025 hexaTune LLC
 # SPDX-License-Identifier: MIT
 
-name: 🤖 CI
+name: "🤖 Lint & Format (Flutter - hexagenapp)"
 
 on:
+  push:
+    branches:
+      - develop
+      - main
+      - "release/**"
   pull_request:
     branches:
       - develop
       - main
       - "release/**"
 
+env:
+  PROJECT_DIR: hexagenapp
+
 jobs:
-  fmt:
+  lint:
     name: Check Formatting (hexaGenApp)
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - name: Setup Java (required by some Flutter tooling)
+        uses: actions/setup-java@v4
         with:
-          toolchain: stable
-          override: true
+          distribution: temurin
+          java-version: "17"
 
-      - name: Check code formatting
-        run: cargo fmt -- --check
-
-  clippy:
-    name: Run Clippy Linter (hexaGenApp)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          toolchain: stable
-          override: true
+          flutter-version: "stable"
+          channel: "stable"
+          cache: true
 
-      - name: Run Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-  build:
-    name: Build Project (hexaGenApp)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - name: Cache Pub & .dart_tool
+        uses: actions/cache@v4
         with:
-          toolchain: stable
-          override: true
+          path: |
+            ~/.pub-cache
+            ${{ env.PROJECT_DIR }}/.dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles(format('{0}/pubspec.lock', env.PROJECT_DIR)) }}
+          restore-keys: |
+            pub-${{ runner.os }}-
 
-      - name: Build
-        run: cargo build --locked --all-targets
+      - name: flutter pub get
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter pub get
 
-  test:
-    name: Run Tests (hexaGenApp)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+      - name: Check formatting
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dart format --output=none --set-exit-if-changed .
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Run tests
-        run: cargo test --locked --all-targets
+      - name: Static analysis
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter analyze
