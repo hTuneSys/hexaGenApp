@@ -1,14 +1,9 @@
 # SPDX-FileCopyrightText: 2025 hexaTune LLC
 # SPDX-License-Identifier: MIT
 
-name: "🤖 Lint & Format (Flutter - hexagenapp)"
+name: 🤖 Lint & Format
 
 on:
-  push:
-    branches:
-      - develop
-      - main
-      - "release/**"
   pull_request:
     branches:
       - develop
@@ -36,7 +31,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "stable"
           channel: "stable"
           cache: true
 
