@@ -1,7 +1,28 @@
 version = 1
 
 [[annotations]]
-path = ["package.json", "CHANGELOG.md"]
+path = [
+  "package.json",
+  "CHANGELOG.md",
+  "**/.gitignore",
+  "docs/CNAME",
+  ".husky/**",
+  "package-lock.json",
+  "**/.metadata",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 hexaTune LLC"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+  "hexagenapp/android/**",
+  "hexagenapp/ios/**",
+  "hexagenapp/web/**",
+  "hexagenapp/macos/**",
+  "hexagenapp/windows/**",
+  "hexagenapp/linux/**",
+]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2025 hexaTune LLC"
 SPDX-License-Identifier = "MIT"

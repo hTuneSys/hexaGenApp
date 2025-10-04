@@ -1,0 +1,26 @@
+# Husky v10: no shebang, no husky.sh
+
+CONFIG=".github/.commitlintrc.yml"
+MSG_FILE="$1"
+
+echo "👉 Running Commitlint check..."
+
+# Check if commitlint is installed via npm
+if npx --no-install commitlint --version >/dev/null 2>&1; then
+  # Config file check
+  if [ -f "$CONFIG" ]; then
+    npx --no-install commitlint --config "$CONFIG" --edit "$MSG_FILE"
+  else
+    echo "❌ Commitlint config not found at: $CONFIG"
+    echo "   Please ensure this file exists before committing."
+    exit 1
+  fi
+else
+  echo "❌ Commitlint CLI not found (required)."
+  echo "   Install it with:"
+  echo "     npm install -D @commitlint/cli @commitlint/config-conventional"
+  echo "   Commit aborted until Commitlint is installed."
+  exit 1
+fi
+
+echo "✅ Commitlint check passed."
