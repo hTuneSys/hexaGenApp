@@ -1,0 +1,83 @@
+{
+  "@@locale": "tr",
+
+  "app":"hexaGen",
+  "appName": "hexaGen App",
+
+  "profile": "Profil",
+  "notifications": "Bildirimler",
+  "generateSignal": "Sinyal Oluştur",
+  "howToUse": "Nasıl Kullanılır",
+  "history": "Geçmiş",
+  "ourProducts": "Ürünlerimiz",
+  "settings": "Ayarlar",
+
+  "frequencyGeneration": "Frekans Üretimi",
+  "manualFrequency": "Manuel Frekans",
+  "selectedFrequency": "Seçili frekans: {value}",
+  "@selectedFrequency": {
+    "description": "Slider üstündeki seçili frekans etiketi",
+    "placeholders": { "value": { "type": "String" } }
+  },
+
+  "stepMinus10kHz": "-10 kHz",
+  "stepPlus10kHz": "+10 kHz",
+  "stepPlus1MHz": "+1 MHz",
+
+  "secondsLabel": "Süre (sn)",
+  "secondsHint": "Örn: 0.5",
+  "secondsPositiveError": "Süre (sn) pozitif bir sayı olmalı",
+  "add": "Ekle",
+
+  "listTitle": "Liste (Frekans + Süre)",
+  "noItems": "Henüz öğe yok. Yukarıdan ekleyin.",
+  "delete": "Sil",
+  "secondsShort": "{seconds} sn",
+  "@secondsShort": {
+    "description": "Saniye değeri kısa biçim",
+    "placeholders": { "seconds": { "type": "String" } }
+  },
+
+  "repeat": "Tekrar",
+  "decrease": "Azalt",
+  "increase": "Arttır",
+  "clearAll": "Tümünü Temizle",
+
+  "totalItems": "Toplam öğe: {count}",
+  "@totalItems": {
+    "description": "Özet satırında sol etiket",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "repeatCount": "Tekrar: {count}",
+  "@repeatCount": {
+    "description": "Özet satırında sağ etiket",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "invalidCommand": "AT komutu değil",
+  "invalidBase64": "Geçersiz base64 parametresi",
+  "invalidUtf8": "Parametrede geçersiz UTF-8",
+  "invalidSysEx": "Geçersiz SysEx",
+  "invalidDataLength": "Geçersiz veri uzunluğu",
+  "paramCount": "Parametre sayısı hatası",
+  "paramValue": "Parametre değeri hatası",
+  "notAQuery": "Sorgu değil",
+  "unknownCommand": "Bilinmeyen komut",
+
+  "deviceNoDeviceConnected": "Cihaz Bağlı Değil",
+  "devicePleaseConnect": "Lütfen bir hexaTune cihazı bağlayın",
+  "deviceQueryingVersion": "Versiyon sorgulanıyor...",
+  "deviceVersion": "Versiyon: {version}",
+  "@deviceVersion": {
+    "description": "Cihaz versiyon etiketi",
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "deviceError": "Hata: {message} ({code})",
+  "@deviceError": {
+    "description": "Cihaz hata mesajı ve kodu",
+    "placeholders": {
+      "message": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  }
+}
