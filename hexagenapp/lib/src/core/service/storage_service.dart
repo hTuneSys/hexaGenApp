@@ -45,8 +45,8 @@ class StorageServiceProvider extends InheritedNotifier<StorageService> {
   });
 
   static StorageService of(BuildContext context) {
-    final provider =
-        context.dependOnInheritedWidgetOfExactType<StorageServiceProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<StorageServiceProvider>();
     assert(provider != null, 'No StorageServiceProvider found in context');
     return provider!.notifier!;
   }

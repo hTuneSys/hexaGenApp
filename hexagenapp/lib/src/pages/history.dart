@@ -17,10 +17,7 @@ class HistoryPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.schedule,
-                size: 64,
-              ),
+              const Icon(Icons.schedule, size: 64),
               const SizedBox(height: 16),
               Text(
                 lang.comingSoon,

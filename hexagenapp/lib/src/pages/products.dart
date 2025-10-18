@@ -17,10 +17,7 @@ class ProductsPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.inventory,
-                size: 64,
-              ),
+              const Icon(Icons.inventory, size: 64),
               const SizedBox(height: 16),
               Text(
                 lang.comingSoon,

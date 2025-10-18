@@ -8,7 +8,7 @@ import 'package:hexagenapp/l10n/app_localizations.dart';
 
 class GenerationPage extends StatefulWidget {
   final ValueChanged<int>? onItemCountChanged;
-  
+
   const GenerationPage({super.key, this.onItemCountChanged});
 
   @override
@@ -17,7 +17,7 @@ class GenerationPage extends StatefulWidget {
 
 class _GenerationPageState extends State<GenerationPage> {
   static const int _maxItems = 64;
-  
+
   // 0 Hz .. 20 MHz
   static const double _minHz = 0;
   static const double _maxHz = 20_000_000;
@@ -44,20 +44,20 @@ class _GenerationPageState extends State<GenerationPage> {
 
   void _addItem() {
     final lang = AppLocalizations.of(context)!;
-    
+
     if (_sequence.length >= _maxItems) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(lang.maxItemsReached)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(lang.maxItemsReached)));
       return;
     }
-    
+
     final secStr = _secondsCtrl.text.trim();
     final sec = double.tryParse(secStr);
     if (sec == null || sec <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(lang.secondsPositiveError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(lang.secondsPositiveError)));
       return;
     }
     setState(() {
@@ -148,7 +148,9 @@ class _GenerationPageState extends State<GenerationPage> {
                     ),
                     const SizedBox(width: 12),
                     FilledButton.icon(
-                      onPressed: _sequence.length >= _maxItems ? null : _addItem,
+                      onPressed: _sequence.length >= _maxItems
+                          ? null
+                          : _addItem,
                       icon: const Icon(Icons.add),
                       label: Text(lang.add),
                     ),
@@ -176,9 +178,10 @@ class _GenerationPageState extends State<GenerationPage> {
                         const SizedBox(height: 16),
                         Text(
                           lang.noItems,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
                         ),
                       ],
                     ),
@@ -249,7 +252,9 @@ class _GenerationPageState extends State<GenerationPage> {
                         keyboardType: const TextInputType.numberWithOptions(
                           signed: false,
                         ),
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         decoration: const InputDecoration(
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(vertical: 8),

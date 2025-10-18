@@ -61,9 +61,9 @@ class SettingsPage extends StatelessWidget {
                 const SizedBox(width: 16),
                 Text(
                   lang.themeMode,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),

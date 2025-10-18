@@ -17,10 +17,7 @@ class HowToUsePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.help_outline,
-                size: 64,
-              ),
+              const Icon(Icons.help_outline, size: 64),
               const SizedBox(height: 16),
               Text(
                 lang.comingSoon,

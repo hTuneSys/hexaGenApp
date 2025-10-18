@@ -43,7 +43,9 @@ class _MainPageState extends State<MainPage> {
         _selectedTab = MainPageTab.generation;
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(lang.generateSignal)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(lang.generateSignal)));
     }
   }
 
@@ -111,7 +113,9 @@ class _MainPageState extends State<MainPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _onFabPressed,
         tooltip: lang.generateSignal,
-        child: Icon(_generationItemCount > 0 ? Symbols.autoplay : Symbols.cadence),
+        child: Icon(
+          _generationItemCount > 0 ? Symbols.autoplay : Symbols.cadence,
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
