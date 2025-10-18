@@ -94,6 +94,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get clearAll => 'Tümünü Temizle';
 
   @override
+  String get maxItemsReached => 'Maksimum 64 öğe eklenebilir';
+
+  @override
   String totalItems(int count) {
     return 'Toplam öğe: $count';
   }
@@ -107,7 +110,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get invalidCommand => 'AT komutu değil';
 
   @override
-  String get invalidBase64 => 'Geçersiz base64 parametresi';
+  String get ddsBusy => 'DDS meşgul';
 
   @override
   String get invalidUtf8 => 'Parametrede geçersiz UTF-8';
@@ -148,4 +151,23 @@ class AppLocalizationsTr extends AppLocalizations {
   String deviceError(String message, String code) {
     return 'Hata: $message ($code)';
   }
+
+  @override
+  String get comingSoon => 'Yakında Hizmette';
+
+  @override
+  String get comingSoonMessage =>
+      'Bu özellik yakında kullanıma sunulacak. Takipte kalın!';
+
+  @override
+  String get themeMode => 'Tema Modu';
+
+  @override
+  String get themeSystem => 'Sistem';
+
+  @override
+  String get themeLight => 'Açık';
+
+  @override
+  String get themeDark => 'Koyu';
 }

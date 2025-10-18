@@ -7,6 +7,7 @@ import 'package:hexagenapp/src/core/utils/theme.dart';
 import 'package:hexagenapp/src/pages/main.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
+import 'package:hexagenapp/src/core/service/storage_service.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 
 class HexaGenApp extends StatefulWidget {
@@ -23,12 +24,14 @@ class HexaGenApp extends StatefulWidget {
 
 class _HexaGenAppState extends State<HexaGenApp> {
   final _deviceService = DeviceService();
+  final _storageService = StorageService();
 
   @override
   void initState() {
     super.initState();
     logger.info('App starting', category: LogCategory.app);
-    // Initialize device service when app starts
+    // Initialize services when app starts
+    _storageService.initialize();
     _deviceService.initialize();
   }
 
@@ -44,20 +47,28 @@ class _HexaGenAppState extends State<HexaGenApp> {
     TextTheme textTheme = createTextTheme(context, "Inter", "Rajdhani");
     MaterialTheme theme = MaterialTheme(textTheme);
 
-    return DeviceServiceProvider(
-      deviceService: _deviceService,
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        title: 'hexaGen',
-        debugShowCheckedModeBanner: false,
-        themeMode: ThemeMode.system,
-        theme: theme.light(),
-        darkTheme: theme.dark(),
-        navigatorKey: HexaGenApp.navigatorKey,
-        scaffoldMessengerKey: HexaGenApp.scaffoldMessengerKey,
-        home: const MainPage(),
-        navigatorObservers: [_LoggingNavigatorObserver()],
+    return StorageServiceProvider(
+      notifier: _storageService,
+      child: DeviceServiceProvider(
+        deviceService: _deviceService,
+        child: AnimatedBuilder(
+          animation: _storageService,
+          builder: (context, child) {
+            return MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              title: 'hexaGen',
+              debugShowCheckedModeBanner: false,
+              themeMode: _storageService.themeModeValue,
+              theme: theme.light(),
+              darkTheme: theme.dark(),
+              navigatorKey: HexaGenApp.navigatorKey,
+              scaffoldMessengerKey: HexaGenApp.scaffoldMessengerKey,
+              home: const MainPage(),
+              navigatorObservers: [_LoggingNavigatorObserver()],
+            );
+          },
+        ),
       ),
     );
   }

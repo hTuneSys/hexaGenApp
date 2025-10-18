@@ -9,6 +9,33 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
-    return Center(child: Text(lang.history));
+    return Center(
+      child: Card(
+        margin: const EdgeInsets.all(24.0),
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.schedule,
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                lang.comingSoon,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                lang.comingSoonMessage,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

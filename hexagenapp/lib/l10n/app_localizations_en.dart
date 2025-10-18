@@ -94,6 +94,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearAll => 'Clear All';
 
   @override
+  String get maxItemsReached => 'Maximum 64 items allowed';
+
+  @override
   String totalItems(int count) {
     return 'Total items: $count';
   }
@@ -107,7 +110,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidCommand => 'Not an AT command';
 
   @override
-  String get invalidBase64 => 'Invalid base64 param';
+  String get ddsBusy => 'DDS busy';
 
   @override
   String get invalidUtf8 => 'Invalid UTF-8 in param';
@@ -148,4 +151,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String deviceError(String message, String code) {
     return 'Error: $message ($code)';
   }
+
+  @override
+  String get comingSoon => 'Coming Soon';
+
+  @override
+  String get comingSoonMessage =>
+      'This feature will be available soon. Stay tuned!';
+
+  @override
+  String get themeMode => 'Theme Mode';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
 }

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
+import 'package:hexagenapp/src/core/service/storage_service.dart';
 import 'package:hexagenapp/src/core/error/error.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -12,12 +13,13 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deviceService = DeviceServiceProvider.of(context);
+    final storageService = StorageServiceProvider.of(context);
     final lang = AppLocalizations.of(context)!;
 
     return AnimatedBuilder(
-      animation: deviceService,
+      animation: Listenable.merge([deviceService, storageService]),
       builder: (context, _) {
-        if (!deviceService.isInitialized) {
+        if (!deviceService.isInitialized || !storageService.isInitialized) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -25,6 +27,7 @@ class SettingsPage extends StatelessWidget {
           onRefresh: deviceService.refresh,
           child: ListView(
             children: [
+              _buildThemeCard(context, lang, storageService),
               deviceService.currentDevice == null
                   ? _buildNoDeviceCard(context, lang)
                   : _buildDeviceCard(context, lang, deviceService),
@@ -32,6 +35,65 @@ class SettingsPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildThemeCard(
+    BuildContext context,
+    AppLocalizations lang,
+    StorageService storageService,
+  ) {
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.palette_outlined,
+                  size: 32,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  lang.themeMode,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SegmentedButton<String>(
+              segments: [
+                ButtonSegment(
+                  value: 'system',
+                  label: Text(lang.themeSystem),
+                  icon: const Icon(Icons.brightness_auto),
+                ),
+                ButtonSegment(
+                  value: 'light',
+                  label: Text(lang.themeLight),
+                  icon: const Icon(Icons.light_mode),
+                ),
+                ButtonSegment(
+                  value: 'dark',
+                  label: Text(lang.themeDark),
+                  icon: const Icon(Icons.dark_mode),
+                ),
+              ],
+              selected: {storageService.themeMode},
+              onSelectionChanged: (Set<String> selected) {
+                storageService.setThemeMode(selected.first);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 

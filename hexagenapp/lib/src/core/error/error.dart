@@ -4,7 +4,7 @@
 /// Application error types with corresponding error codes
 enum AppError {
   invalidCommand,
-  invalidBase64,
+  ddsBusy,
   invalidUtf8,
   invalidSysEx,
   invalidDataLength,
@@ -21,7 +21,7 @@ extension AppErrorExtension on AppError {
       // Command errors
       case AppError.invalidCommand:
         return 'E001001';
-      case AppError.invalidBase64:
+      case AppError.ddsBusy:
         return 'E001002';
       case AppError.invalidUtf8:
         return 'E001003';
@@ -53,8 +53,8 @@ extension AppErrorExtension on AppError {
     switch (this) {
       case AppError.invalidCommand:
         return localizations.invalidCommand;
-      case AppError.invalidBase64:
-        return localizations.invalidBase64;
+      case AppError.ddsBusy:
+        return localizations.ddsBusy;
       case AppError.invalidUtf8:
         return localizations.invalidUtf8;
       case AppError.invalidSysEx:

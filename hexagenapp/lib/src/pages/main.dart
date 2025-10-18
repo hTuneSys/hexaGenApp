@@ -21,11 +21,16 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   MainPageTab _selectedTab = MainPageTab.howTo;
+  int _generationItemCount = 0;
 
   late final List<Widget> _pages = <Widget>[
     const HowToUsePage(),
     const HistoryPage(),
-    const GenerationPage(),
+    GenerationPage(
+      onItemCountChanged: (count) {
+        setState(() => _generationItemCount = count);
+      },
+    ),
     const ProductsPage(),
     const SettingsPage(),
   ];
@@ -38,9 +43,7 @@ class _MainPageState extends State<MainPage> {
         _selectedTab = MainPageTab.generation;
       });
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(lang.generateSignal)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(lang.generateSignal)));
     }
   }
 
@@ -108,7 +111,7 @@ class _MainPageState extends State<MainPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _onFabPressed,
         tooltip: lang.generateSignal,
-        child: const Icon(Symbols.cadence),
+        child: Icon(_generationItemCount > 0 ? Symbols.autoplay : Symbols.cadence),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
