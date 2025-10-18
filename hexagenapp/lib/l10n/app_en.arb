@@ -43,6 +43,8 @@
   "increase": "Increase",
   "clearAll": "Clear All",
 
+  "maxItemsReached": "Maximum 64 items allowed",
+
   "totalItems": "Total items: {count}",
   "@totalItems": {
     "description": "Summary label on the left",
@@ -55,7 +57,7 @@
   },
 
   "invalidCommand": "Not an AT command",
-  "invalidBase64": "Invalid base64 param",
+  "ddsBusy": "DDS busy",
   "invalidUtf8": "Invalid UTF-8 in param",
   "invalidSysEx": "Invalid SysEx",
   "invalidDataLength": "Invalid data length",
@@ -79,5 +81,13 @@
       "message": { "type": "String" },
       "code": { "type": "String" }
     }
-  }
+  },
+
+  "comingSoon": "Coming Soon",
+  "comingSoonMessage": "This feature will be available soon. Stay tuned!",
+
+  "themeMode": "Theme Mode",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark"
 }

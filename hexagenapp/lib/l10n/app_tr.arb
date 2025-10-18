@@ -43,6 +43,8 @@
   "increase": "Arttır",
   "clearAll": "Tümünü Temizle",
 
+  "maxItemsReached": "Maksimum 64 öğe eklenebilir",
+
   "totalItems": "Toplam öğe: {count}",
   "@totalItems": {
     "description": "Özet satırında sol etiket",
@@ -55,7 +57,7 @@
   },
 
   "invalidCommand": "AT komutu değil",
-  "invalidBase64": "Geçersiz base64 parametresi",
+  "ddsBusy": "DDS meşgul",
   "invalidUtf8": "Parametrede geçersiz UTF-8",
   "invalidSysEx": "Geçersiz SysEx",
   "invalidDataLength": "Geçersiz veri uzunluğu",
@@ -79,5 +81,13 @@
       "message": { "type": "String" },
       "code": { "type": "String" }
     }
-  }
+  },
+
+  "comingSoon": "Yakında Hizmette",
+  "comingSoonMessage": "Bu özellik yakında kullanıma sunulacak. Takipte kalın!",
+
+  "themeMode": "Tema Modu",
+  "themeSystem": "Sistem",
+  "themeLight": "Açık",
+  "themeDark": "Koyu"
 }

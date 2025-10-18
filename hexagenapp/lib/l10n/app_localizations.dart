@@ -260,6 +260,12 @@ abstract class AppLocalizations {
   /// **'Clear All'**
   String get clearAll;
 
+  /// No description provided for @maxItemsReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum 64 items allowed'**
+  String get maxItemsReached;
+
   /// Summary label on the left
   ///
   /// In en, this message translates to:
@@ -278,11 +284,11 @@ abstract class AppLocalizations {
   /// **'Not an AT command'**
   String get invalidCommand;
 
-  /// No description provided for @invalidBase64.
+  /// No description provided for @ddsBusy.
   ///
   /// In en, this message translates to:
-  /// **'Invalid base64 param'**
-  String get invalidBase64;
+  /// **'DDS busy'**
+  String get ddsBusy;
 
   /// No description provided for @invalidUtf8.
   ///
@@ -355,6 +361,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error: {message} ({code})'**
   String deviceError(String message, String code);
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming Soon'**
+  String get comingSoon;
+
+  /// No description provided for @comingSoonMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature will be available soon. Stay tuned!'**
+  String get comingSoonMessage;
+
+  /// No description provided for @themeMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Mode'**
+  String get themeMode;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
 }
 
 class _AppLocalizationsDelegate
