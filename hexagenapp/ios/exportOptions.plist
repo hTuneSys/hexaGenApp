@@ -3,15 +3,8 @@
 <plist version="1.0">
 <dict>
   <key>method</key><string>app-store</string>
-  <key>signingStyle</key><string>manual</string>
-  <key>teamID</key><string>3B6JLK5JN9</string>
-  <key>provisioningProfiles</key>
-  <dict>
-    <key>com.hexatune.hexagenapp</key><string>hexaGen Distribution</string>
-  </dict>
   <key>destination</key><string>export</string>
   <key>uploadSymbols</key><true/>
   <key>compileBitcode</key><false/>
 </dict>
 </plist>
-
