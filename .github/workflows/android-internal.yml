@@ -6,10 +6,6 @@ name: Deploy Flutter to Google Play (Internal)
 on:
   workflow_dispatch:
     inputs:
-      buildNumber:
-        description: "Android versionCode (pubspec +buildNumber)"
-        required: true
-        default: "10001"
       releaseName:
         description: "Release name (Play Console notu)"
         required: false
@@ -19,7 +15,7 @@ on:
         required: true
         default: "internal"
       status:
-        description: "Release status (draft/inProgress/ halted/completed)"
+        description: "Release status (draft/inProgress/halted/completed)"
         required: true
         default: "completed"
 
@@ -37,13 +33,13 @@ jobs:
       - name: Setup Java (JDK 17)
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: "17"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0" # projenize uygun sürüm
+          flutter-version: "3.24.0" # projene uygun sürüm
 
       - name: Flutter pub get
         run: flutter pub get
@@ -51,15 +47,27 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # pubspec.yaml'daki buildNumber'ı güncelle
-      - name: Bump pubspec buildNumber
+      # --- Build number'ı otomatik artır ---
+      # Base'i 10000 seçtik; ilk koşu 10001 olur. İstersen aşağıdaki 10000 değerini değiştir.
+      - name: Derive BUILD_NUMBER from run_number
         run: |
-          BN="${{ github.event.inputs.buildNumber }}"
-          sed -i -E "s/^version: ([0-9]+\.[0-9]+\.[0-9]+)\+[0-9]+$/version: \1+${BN}/" pubspec.yaml
-          echo "Updated pubspec:" && grep '^version:' pubspec.yaml
+          echo "GITHUB_RUN_NUMBER=${GITHUB_RUN_NUMBER}"
+          echo "BUILD_NUMBER=$((10000 + GITHUB_RUN_NUMBER))" >> $GITHUB_ENV
 
-      # Keystore'u CI'da üret ve key.properties oluştur
-      - name: Prepare signing
+      - name: Update pubspec.yaml (+BUILD_NUMBER)
+        run: |
+          BN="${BUILD_NUMBER}"
+          if grep -qE '^version: [0-9]+\.[0-9]+\.[0-9]+\+[0-9]+' pubspec.yaml; then
+            sed -i -E "s/^version: ([0-9]+\.[0-9]+\.[0-9]+)\+[0-9]+$/version: \1+${BN}/" pubspec.yaml
+          else
+            # version satırı yoksa bir default ekleyelim
+            echo "" >> pubspec.yaml
+            echo "version: 1.0.0+${BN}" >> pubspec.yaml
+          fi
+          echo "pubspec version -> $(grep '^version:' pubspec.yaml)"
+
+      # --- İmzalama ayarlarını hazırla ---
+      - name: Prepare signing (keystore & key.properties)
         run: |
           mkdir -p android/app
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
@@ -70,24 +78,21 @@ jobs:
           storeFile=app/upload-keystore.jks
           EOF
 
-      # Android SDK lisansları
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
 
-      # Release AAB üret
       - name: Build AAB (release)
         run: flutter build appbundle --release
 
-      # (Opsiyonel) WhatsNew metinleri kullan
-      - name: Prepare WhatsNew files
+      # (Opsiyonel) WhatsNew dosyası
+      - name: Prepare WhatsNew (optional)
         if: ${{ secrets.WHATSNEW_ENABLED == 'true' }}
         run: |
           mkdir -p android/whatsnew
-          : > android/whatsnew/${{ secrets.WHATSNEW_DEFAULT_LOCALE || 'en-US' }}.txt
-          echo "Stability improvements and minor fixes." >> android/whatsnew/${{ secrets.WHATSNEW_DEFAULT_LOCALE || 'en-US' }}.txt
+          LOCALE="${{ secrets.WHATSNEW_DEFAULT_LOCALE || 'en-US' }}"
+          echo "Stability improvements and minor fixes." > "android/whatsnew/${LOCALE}.txt"
 
-      # Play Console'a yükle
-      - name: Upload to Google Play
+      - name: Upload to Google Play (Internal)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
