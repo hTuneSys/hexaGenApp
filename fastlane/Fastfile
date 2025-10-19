@@ -45,27 +45,9 @@ end
 platform :ios do
   desc "Build the Flutter IPA and upload it to TestFlight"
   lane :beta do
+    # Configure keychain for CI environments (e.g., GitHub Actions)
     setup_ci if ENV['CI']
 
-    team_id        = "3B6JLK5JN9"
-    app_identifier = "com.hexatune.hexagenapp"
-
-    # 1) İmzalama materyallerini getir (Apple Distribution + App Store profile)
-    match(
-      type: "appstore",
-      app_identifier: app_identifier,
-      team_id: team_id,
-      readonly: true
-    )
-
-    # 2) Xcode'u otomatik imzalamaya al (Release → Apple Distribution)
-    automatic_code_signing(
-      path: "ios/Runner.xcodeproj",
-      use_automatic_signing: true,
-      team_id: team_id
-    )
-
-    # 3) Flutter derleme
     app_dir = detect_app_dir
     UI.message("Using Flutter app directory: #{app_dir}")
 
@@ -73,6 +55,7 @@ platform :ios do
       sh("flutter --version")
       sh("flutter pub get")
 
+      # Run CocoaPods if needed (optional — Flutter usually manages this)
       if File.directory?("ios") && File.exist?(File.join("ios", "Podfile"))
         Dir.chdir("ios") do
           sh("pod repo update")
@@ -80,18 +63,21 @@ platform :ios do
         end
       end
 
+      # Build number comes from CI or uses timestamp fallback
       build_number = ENV['BUILD_NUMBER'] || Time.now.strftime("%Y%m%d%H%M")
       sh("flutter build ipa --release --build-number=#{build_number} --export-options-plist=ios/exportOptions.plist")
     end
 
-    # 4) IPA bul ve TestFlight'a yükle
+    # Locate the generated IPA
     app_dir = detect_app_dir
     ipa = Dir[File.join(app_dir, "build/ios/ipa/*.ipa")].first
     UI.user_error!("IPA not found at #{File.join(app_dir, 'build/ios/ipa/*.ipa')}") unless ipa
 
+    # Retrieve App Store Connect API key (set by GitHub Actions workflow)
     api_key_path = ENV['APP_STORE_CONNECT_API_KEY_PATH']
     UI.user_error!("APP_STORE_CONNECT_API_KEY_PATH is missing or invalid") unless api_key_path && File.exist?(api_key_path)
 
+    # Upload to TestFlight
     upload_to_testflight(
       ipa: ipa,
       api_key_path: api_key_path,
