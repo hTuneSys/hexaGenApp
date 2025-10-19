@@ -6,18 +6,15 @@ default_platform(:ios)
 # --- Helper methods ----------------------------------------------------------
 
 def repo_root
-  # The repository root is one level above the fastlane directory
   File.expand_path("..", __dir__)
 end
 
 def resolve_path(p)
-  # If APP_DIR is not absolute, resolve it relative to the repository root
   return p if p.start_with?("/")
   File.expand_path(p, repo_root)
 end
 
 def detect_app_dir
-  # 1) Manual override — if APP_DIR is provided via environment variable, use it
   from_env = ENV['APP_DIR']
   if from_env
     candidate = resolve_path(from_env)
@@ -25,7 +22,6 @@ def detect_app_dir
     return candidate
   end
 
-  # 2) Automatic detection — try common Flutter directory names
   candidates = %w[hexagenapp hexaGenApp app .]
   hit = candidates.find do |d|
     full = File.expand_path(d, repo_root)
@@ -51,11 +47,6 @@ end
 platform :ios do
   desc "Build the Flutter IPA and upload it to TestFlight"
   lane :beta do
-    # NOTE: setup_ci kaldırıldı — keychain çakışmasını önlemek için.
-    # Sertifika/profil importu GitHub Actions adımlarıyla yapılmalı:
-    # - apple-actions/import-codesign-certs@v3
-    # - apple-actions/install-provisioning-profile@v1
-
     app_dir = detect_app_dir
     UI.message("Using Flutter app directory: #{app_dir}")
 
@@ -65,34 +56,33 @@ platform :ios do
       sh("flutter --version")
       sh("flutter pub get")
 
-      # Optional: CocoaPods (Flutter genelde yönetir ama Podfile varsa güncelle)
       if File.directory?("ios") && File.exist?(File.join("ios", "Podfile"))
         Dir.chdir("ios") do
           sh("pod repo update")
           sh("pod install")
         end
+        Dir.chdir(app_dir) # return to project root
       end
 
-      # Build number: CI -> BUILD_NUMBER; yoksa timestamp
       build_number = ENV['BUILD_NUMBER'] || Time.now.strftime("%Y%m%d%H%M")
       UI.message("Using build number: #{build_number}")
 
-      # IMPORTANT: İmzalama, YAML aksiyonlarıyla yüklenen keychain/profil üzerinden yapılacak.
-      sh(%Q[flutter build ipa --release --build-number=#{build_number} --export-options-plist=#{export_plist}])
+      # Force manual signing with distribution certificate/provisioning
+      sh(%Q[
+        flutter build ipa --release --build-number=#{build_number} \
+        --export-options-plist=#{export_plist}
+      ])
     end
 
-    # IPA bul
     app_dir = detect_app_dir
     ipa = Dir[File.join(app_dir, "build/ios/ipa/*.ipa")].first
     UI.user_error!("IPA not found at #{File.join(app_dir, 'build/ios/ipa/*.ipa')}") unless ipa
     UI.message("IPA found: #{ipa}")
 
-    # App Store Connect API key dosya yolu
     api_key_path = ENV['APP_STORE_CONNECT_API_KEY_PATH']
     UI.user_error!("APP_STORE_CONNECT_API_KEY_PATH is missing or invalid") unless api_key_path && File.exist?(api_key_path)
     UI.message("Using App Store Connect API key at: #{api_key_path}")
 
-    # TestFlight yükle
     upload_to_testflight(
       ipa: ipa,
       api_key_path: api_key_path,
@@ -104,3 +94,4 @@ platform :ios do
     UI.success("🎉 TestFlight upload triggered successfully!")
   end
 end
+
