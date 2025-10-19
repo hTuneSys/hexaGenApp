@@ -22,6 +22,7 @@ on:
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: hexagenapp
@@ -40,6 +41,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.35.6"
+          cache: true
 
       - name: Flutter pub get
         run: flutter pub get
@@ -47,12 +49,11 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # --- Build number'ı otomatik artır ---
-      # Base'i 10000 seçtik; ilk koşu 10001 olur. İstersen aşağıdaki 10000 değerini değiştir.
+      # --- Otomatik buildNumber ---
       - name: Derive BUILD_NUMBER from run_number
         run: |
-          echo "GITHUB_RUN_NUMBER=${GITHUB_RUN_NUMBER}"
           echo "BUILD_NUMBER=$((10000 + GITHUB_RUN_NUMBER))" >> $GITHUB_ENV
+          echo "Using BUILD_NUMBER=${BUILD_NUMBER}"
 
       - name: Update pubspec.yaml (+BUILD_NUMBER)
         run: |
@@ -60,13 +61,12 @@ jobs:
           if grep -qE '^version: [0-9]+\.[0-9]+\.[0-9]+\+[0-9]+' pubspec.yaml; then
             sed -i -E "s/^version: ([0-9]+\.[0-9]+\.[0-9]+)\+[0-9]+$/version: \1+${BN}/" pubspec.yaml
           else
-            # version satırı yoksa bir default ekleyelim
             echo "" >> pubspec.yaml
             echo "version: 1.0.0+${BN}" >> pubspec.yaml
           fi
           echo "pubspec version -> $(grep '^version:' pubspec.yaml)"
 
-      # --- İmzalama ayarlarını hazırla ---
+      # --- İmzalama ---
       - name: Prepare signing (keystore & key.properties)
         run: |
           mkdir -p android/app
@@ -81,5 +81,24 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
 
+      # --- Build ---
       - name: Build AAB (release)
         run: flutter build appbundle --release
+
+      # --- AAB doğrula (yoksa hata ver) ---
+      - name: Verify AAB exists
+        run: |
+          ls -lah build/app/outputs/bundle/release/ || true
+          test -f build/app/outputs/bundle/release/app-release.aab
+
+      # --- Play Console'a yükle ---
+      - name: Upload to Google Play (Internal)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ secrets.PACKAGE_NAME }} # com.hexatune.hexagenapp
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ github.event.inputs.track }} # internal
+          status: ${{ github.event.inputs.status }} # completed
+          releaseName: ${{ github.event.inputs.releaseName }}
+          inAppUpdatePriority: 0
