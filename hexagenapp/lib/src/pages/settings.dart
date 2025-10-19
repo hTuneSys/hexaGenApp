@@ -106,22 +106,15 @@ class SettingsPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.usb_off,
-              size: 64,
-              color: Theme.of(context).colorScheme.outline,
-            ),
+            Icon(Icons.usb_off, size: 64, color: Theme.of(context).colorScheme.outline),
             const SizedBox(height: 16),
-            Text(
-              lang.deviceNoDeviceConnected,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text(lang.deviceNoDeviceConnected, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
               lang.devicePleaseConnect,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline),
               textAlign: TextAlign.center,
             ),
           ],
@@ -138,9 +131,7 @@ class SettingsPage extends StatelessWidget {
     final device = deviceService.currentDevice!;
     final deviceName = device.name;
     // ignore: unnecessary_null_comparison
-    final name = (deviceName == null || deviceName.trim().isEmpty)
-        ? 'hexaTune'
-        : deviceName;
+    final name = (deviceName == null || deviceName.trim().isEmpty) ? 'hexaTune' : deviceName;
 
     final nameParts = name.split(' ');
     final brand = nameParts.isNotEmpty ? nameParts[0] : 'hexaTune';
@@ -158,9 +149,7 @@ class SettingsPage extends StatelessWidget {
             Icon(
               Icons.usb,
               size: 48,
-              color: deviceService.isConnected
-                  ? colorScheme.primary
-                  : colorScheme.outline,
+              color: deviceService.isConnected ? colorScheme.primary : colorScheme.outline,
             ),
             const SizedBox(width: 24),
             Expanded(
@@ -170,9 +159,9 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   Text(
                     brand,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   if (model.isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -194,17 +183,15 @@ class SettingsPage extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           lang.deviceQueryingVersion,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
                     )
                   else if (deviceService.deviceVersion != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(8),
@@ -219,10 +206,7 @@ class SettingsPage extends StatelessWidget {
                     )
                   else if (deviceService.deviceError != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(8),

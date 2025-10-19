@@ -17,7 +17,7 @@ typedef DeviceResponseCallback =
 /// HexaTune device manager
 class HexaTuneDeviceManager {
   final MidiCommand _midi = MidiCommand();
-  final RegExp _hexaPattern = RegExp(r'hexatune', caseSensitive: false);
+  final RegExp _hexaPattern = RegExp(r'hexa', caseSensitive: false);
 
   StreamSubscription<dynamic>? _setupSub;
   StreamSubscription<dynamic>? _dataSub;
@@ -159,10 +159,7 @@ class HexaTuneDeviceManager {
     _responseTimeout?.cancel();
     _responseTimeout = Timer(const Duration(seconds: 10), () {
       if (_waitingForResponse) {
-        logger.warning(
-          'AT+VERSION? response timeout',
-          category: LogCategory.midi,
-        );
+        logger.warning('AT+VERSION? response timeout', category: LogCategory.midi);
         _waitingForResponse = false;
         _sysexBuffer.clear();
         _notifyResponse(version: 'No response', error: null, waiting: false);
@@ -201,10 +198,7 @@ class HexaTuneDeviceManager {
       _sysexBuffer.clear();
 
       if (message == null) {
-        logger.warning(
-          'Failed to extract SysEx payload',
-          category: LogCategory.midi,
-        );
+        logger.warning('Failed to extract SysEx payload', category: LogCategory.midi);
         _waitingForResponse = false;
         return;
       }
@@ -215,33 +209,20 @@ class HexaTuneDeviceManager {
       final response = ATCommand.parseResponse(message);
 
       if (response == null) {
-        logger.warning(
-          'Unknown AT response format: "$message"',
-          category: LogCategory.midi,
-        );
+        logger.warning('Unknown AT response format: "$message"', category: LogCategory.midi);
         return;
       }
 
       switch (response.type) {
         case ATResponseType.error:
-          logger.warning(
-            'AT Error: ${response.errorCode}',
-            category: LogCategory.midi,
-          );
+          logger.warning('AT Error: ${response.errorCode}', category: LogCategory.midi);
           final error = AppErrorExtension.fromCode(response.errorCode ?? '');
           _notifyResponse(version: null, error: error, waiting: false);
           break;
 
         case ATResponseType.version:
-          logger.info(
-            'AT Version: ${response.version}',
-            category: LogCategory.midi,
-          );
-          _notifyResponse(
-            version: response.version,
-            error: null,
-            waiting: false,
-          );
+          logger.info('AT Version: ${response.version}', category: LogCategory.midi);
+          _notifyResponse(version: response.version, error: null, waiting: false);
           break;
 
         case ATResponseType.ok:
@@ -262,11 +243,7 @@ class HexaTuneDeviceManager {
   }
 
   /// Notify response callback
-  void _notifyResponse({
-    String? version,
-    AppError? error,
-    required bool waiting,
-  }) {
+  void _notifyResponse({String? version, AppError? error, required bool waiting}) {
     _responseCallback?.call(version: version, error: error, waiting: waiting);
   }
 
