@@ -1,0 +1,106 @@
+# SPDX-FileCopyrightText: 2025 hexaTune LLC
+# SPDX-License-Identifier: MIT
+
+name: iOS → TestFlight (Manual Trigger)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build (leave empty for 'develop')"
+        required: false
+        default: "develop"
+
+jobs:
+  build-and-upload:
+    runs-on: macos-latest # or 'macos-26' for Apple Silicon runners
+
+    env:
+      BUILD_NUMBER: ${{ github.run_number }} # passed to Fastlane
+
+    steps:
+      - name: Checkout (selected branch or develop)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || 'develop' }}
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "15.4" # pin a stable version
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install fastlane
+        run: gem install fastlane
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          # flutter-version: '3.24.3'  # uncomment to pin
+
+      # -----------------------------
+      # Speed-ups: caches (optional)
+      # -----------------------------
+
+      # Cache CocoaPods repo to speed up 'pod repo update'
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ~/.cocoapods
+          key: ${{ runner.os }}-cocoapods-${{ hashFiles('hexagenapp/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cocoapods-
+
+      # Cache Flutter pub packages (pub get runs inside Fastlane later)
+      - name: Cache Flutter pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('hexagenapp/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      # --- Code signing (recommended) ---
+      - name: Import signing certificates and provisioning profile
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERT_P12 }}
+          p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
+          mobileprovision-file-base64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+
+      - name: Install CocoaPods (inside hexagenapp/ios)
+        run: |
+          sudo gem install cocoapods
+          cd hexagenapp/ios
+          pod repo update
+          pod install
+
+      # --- Configure App Store Connect API key for fastlane ---
+      - name: Configure App Store Connect API key (fastlane/api_key.json)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          mkdir -p fastlane
+          # Build api_key.json using a one-line Python command (no heredoc → no YAML issues)
+          python3 -c 'import os,json; key=os.environ["ASC_PRIVATE_KEY"].replace("\\n","\n"); open("fastlane/api_key.json","w").write(json.dumps({"key_id":os.environ["ASC_KEY_ID"],"issuer_id":os.environ["ASC_ISSUER_ID"],"key":key,"in_house":False}))'
+          echo "APP_STORE_CONNECT_API_KEY_PATH=$GITHUB_WORKSPACE/fastlane/api_key.json" >> $GITHUB_ENV
+
+      # --- Build and upload to TestFlight using Fastlane ---
+      - name: Build & Upload to TestFlight
+        run: fastlane ios beta
+
+      # Make the generated IPA downloadable from the workflow run
+      - name: Upload IPA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: hexagenapp/build/ios/ipa/*.ipa
+          if-no-files-found: ignore

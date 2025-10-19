@@ -1,30 +1,54 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// SPDX-FileCopyrightText: 2025 hexaTune LLC
+// SPDX-License-Identifier: MIT
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:hexagenapp/main.dart';
+import 'package:hexagenapp/src/core/error/error.dart';
+import 'package:hexagenapp/src/core/service/log_service.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('Error Handling Tests', () {
+    test('AppError codes are unique', () {
+      final codes = AppError.values.map((e) => e.code).toSet();
+      expect(codes.length, equals(AppError.values.length));
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('AppError fromCode works', () {
+      final error = AppErrorExtension.fromCode('E001001');
+      expect(error, equals(AppError.invalidCommand));
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('AppError fromCode returns null for unknown', () {
+      final error = AppErrorExtension.fromCode('E999999');
+      expect(error, isNull);
+    });
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  group('LogService Tests', () {
+    test('LogService is singleton', () {
+      final logger1 = LogService();
+      final logger2 = LogService();
+      expect(logger1, same(logger2));
+    });
+
+    test('LogService logs messages', () {
+      final logger = LogService();
+      logger.info('Test message');
+      final logs = logger.getRecentLogs(count: 10);
+      expect(logs.any((log) => log.message == 'Test message'), isTrue);
+    });
+
+    test('LogService filters by level', () {
+      final logger = LogService();
+      logger.clearHistory();
+      logger.debug('Debug message');
+      logger.error('Error message');
+
+      final errorLogs = logger.getRecentLogs(
+        count: 100,
+        minLevel: LogLevel.error,
+      );
+      expect(errorLogs.length, equals(1));
+      expect(errorLogs.first.message, equals('Error message'));
+    });
   });
 }

@@ -1,0 +1,95 @@
+# Husky v10+: no shebang, no sourcing, POSIX-sh safe
+set -e
+
+############################################
+# 1) REUSE (repo root) — STRICT
+############################################
+if ! command -v reuse >/dev/null 2>&1; then
+  echo "❌ REUSE tool is required but not installed."
+  echo "   Install: pipx install reuse   OR   python3 -m pip install --user reuse"
+  exit 1
+fi
+
+echo "📜 REUSE license compliance (repo root)..."
+if ! reuse lint; then
+  echo "❌ REUSE license compliance failed."
+  exit 1
+fi
+echo "✅ REUSE compliance passed."
+
+############################################
+# 2) Flutter app checks in hexagenapp/
+############################################
+(
+  APP_DIR="hexagenapp"
+  if [ ! -d "$APP_DIR" ]; then
+    echo "❌ '$APP_DIR' directory not found."
+    exit 1
+  fi
+
+  cd "$APP_DIR"
+
+  # Tools required
+  if ! command -v flutter >/dev/null 2>&1; then
+    echo "❌ 'flutter' CLI not found (required)."
+    echo "   Install Flutter: https://docs.flutter.dev/get-started/install"
+    exit 1
+  fi
+  if ! command -v dart >/dev/null 2>&1; then
+    echo "❌ 'dart' CLI not found (required)."
+    echo "   Dart comes with Flutter; ensure Flutter SDK is on PATH."
+    exit 1
+  fi
+
+  echo "🔧 Ensuring pub deps..."
+  flutter pub get >/dev/null
+
+  echo "🔍 Dart formatting check..."
+  if ! dart format --output=none --set-exit-if-changed .; then
+    echo "❌ Dart formatting issues detected."
+    echo "   Fix with: dart format ."
+    exit 1
+  fi
+
+  echo "🧠 Flutter analyze..."
+  if ! flutter analyze --no-pub; then
+    echo "❌ flutter analyze failed."
+    exit 1
+  fi
+
+  echo "🧪 Flutter tests..."
+  if ! flutter test --no-pub; then
+    echo "❌ flutter test failed."
+    exit 1
+  fi
+
+  # Optional build (opt-in to avoid heavy pre-commit)
+  if [ "${FLUTTER_PRECOMMIT_BUILD:-0}" = "1" ]; then
+    echo "🏗️ Optional build enabled (FLUTTER_PRECOMMIT_BUILD=1)..."
+    OS="$(uname -s || echo unknown)"
+
+    if [ "$OS" = "Darwin" ]; then
+      # macOS: try iOS (no codesign)
+      echo "📦 Building iOS (no-codesign)..."
+      if ! flutter build ios --no-codesign --no-tree-shake-icons; then
+        echo "❌ flutter build ios failed."
+        exit 1
+      fi
+    else
+      # Other OS: try Android APK if SDK present
+      if command -v adb >/dev/null 2>&1 || [ -n "${ANDROID_HOME:-}" ] || [ -n "${ANDROID_SDK_ROOT:-}" ]; then
+        echo "📦 Building Android APK (debug)..."
+        if ! flutter build apk --debug --no-tree-shake-icons; then
+          echo "❌ flutter build apk failed."
+          exit 1
+        fi
+      else
+        echo "ℹ️ Android SDK not detected; skipping APK build."
+      fi
+    fi
+  else
+    echo "ℹ️ Skipping build (set FLUTTER_PRECOMMIT_BUILD=1 to enable)."
+  fi
+)
+
+echo "✅ All checks passed! Proceeding with commit..."

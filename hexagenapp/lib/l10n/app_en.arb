@@ -1,0 +1,93 @@
+{
+  "@@locale": "en",
+
+  "app":"hexaGen",
+  "appName": "hexaGen App",
+
+  "profile": "Profile",
+  "notifications": "Notifications",
+  "generateSignal": "Generate Signal",
+  "howToUse": "How to use",
+  "history": "History",
+  "ourProducts": "Our Products",
+  "settings": "Settings",
+
+  "frequencyGeneration": "Frequency Generation",
+  "manualFrequency": "Manual Frequency",
+  "selectedFrequency": "Selected frequency: {value}",
+  "@selectedFrequency": {
+    "description": "Label above the slider showing the currently selected frequency",
+    "placeholders": { "value": { "type": "String" } }
+  },
+
+  "stepMinus10kHz": "-10 kHz",
+  "stepPlus10kHz": "+10 kHz",
+  "stepPlus1MHz": "+1 MHz",
+
+  "secondsLabel": "Duration (s)",
+  "secondsHint": "e.g. 0.5",
+  "secondsPositiveError": "Duration (s) must be a positive number",
+  "add": "Add",
+
+  "listTitle": "List (Frequency + Duration)",
+  "noItems": "No items yet. Add from above.",
+  "delete": "Delete",
+  "secondsShort": "{seconds} s",
+  "@secondsShort": {
+    "description": "Short seconds unit next to a numeric value",
+    "placeholders": { "seconds": { "type": "String" } }
+  },
+
+  "repeat": "Repeat",
+  "decrease": "Decrease",
+  "increase": "Increase",
+  "clearAll": "Clear All",
+
+  "maxItemsReached": "Maximum 64 items allowed",
+
+  "totalItems": "Total items: {count}",
+  "@totalItems": {
+    "description": "Summary label on the left",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "repeatCount": "Repeat: {count}",
+  "@repeatCount": {
+    "description": "Summary label on the right",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "invalidCommand": "Not an AT command",
+  "ddsBusy": "DDS busy",
+  "invalidUtf8": "Invalid UTF-8 in param",
+  "invalidSysEx": "Invalid SysEx",
+  "invalidDataLength": "Invalid data length",
+  "paramCount": "Param count",
+  "paramValue": "Param value",
+  "notAQuery": "Not a query",
+  "unknownCommand": "Unknown command",
+
+  "deviceNoDeviceConnected": "No Device Connected",
+  "devicePleaseConnect": "Please connect a hexaTune device",
+  "deviceQueryingVersion": "Querying version...",
+  "deviceVersion": "Version: {version}",
+  "@deviceVersion": {
+    "description": "Device version label",
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "deviceError": "Error: {message} ({code})",
+  "@deviceError": {
+    "description": "Device error message with code",
+    "placeholders": {
+      "message": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
+
+  "comingSoon": "Coming Soon",
+  "comingSoonMessage": "This feature will be available soon. Stay tuned!",
+
+  "themeMode": "Theme Mode",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark"
+}

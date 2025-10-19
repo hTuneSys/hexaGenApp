@@ -6,8 +6,8 @@
 *.swp
 .buildlog/
 .history
-
-
+node_modules/
+fastlane/api_key.json
 
 # Flutter repo-specific
 /bin/cache/
