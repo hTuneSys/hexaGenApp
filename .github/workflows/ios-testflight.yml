@@ -12,6 +12,8 @@ jobs:
 
     env:
       BUILD_NUMBER: ${{ github.run_number }} # forwarded to Fastlane/Fastfile
+      BUNDLE_ID: com.hexatune.hexagenapp
+      PROFILE_TYPE: IOS_APP_STORE # alternatives: IOS_APP_DEVELOPMENT, IOS_APP_ADHOC
 
     steps:
       - name: Checkout (default branch)
@@ -36,7 +38,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          # flutter-version: '3.24.3'  # (opsiyonel) pinlemek istersen aç
+          # flutter-version: '3.24.3'  # (opsiyonel) sabitlemek istersen aç
 
       # -----------------------------
       # Speed-ups: caches (optional)
@@ -57,18 +59,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # --- Code signing: import certificate (.p12) into the runner keychain ---
+      # --- Code signing: import Apple Distribution certificate (.p12) ---
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.IOS_CERT_P12 }}
           p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
 
-      # --- Code signing: import provisioning profile (official action) ---
-      - name: Import provisioning profile
-        uses: apple-actions/import-provisioning-profile@v1
+      # --- Download & install provisioning profiles from App Store Connect ---
+      - name: Download provisioning profile(s)
+        uses: Apple-Actions/download-provisioning-profiles@v4
         with:
-          provisioning-profile-base64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          bundle-id: ${{ env.BUNDLE_ID }}
+          profile-type: ${{ env.PROFILE_TYPE }}
+          issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          api-key-id: ${{ secrets.ASC_KEY_ID }}
+          api-private-key: ${{ secrets.ASC_PRIVATE_KEY }}
 
       # (Optional) quick sanity check
       - name: Show code signing identities & profiles (debug)
