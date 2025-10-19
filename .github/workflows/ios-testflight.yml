@@ -5,11 +5,6 @@ name: iOS → TestFlight (Manual Trigger)
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: "Branch to build (leave empty for 'develop')"
-        required: false
-        default: "develop"
 
 jobs:
   build-and-upload:
@@ -19,10 +14,11 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }} # passed to Fastlane
 
     steps:
-      - name: Checkout (selected branch or develop)
+      # Checkout repository default branch (no ref) with full history (safe for tools that inspect git)
+      - name: Checkout (default branch)
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch || 'develop' }}
+          fetch-depth: 0
 
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -46,8 +42,6 @@ jobs:
       # -----------------------------
       # Speed-ups: caches (optional)
       # -----------------------------
-
-      # Cache CocoaPods repo to speed up 'pod repo update'
       - name: Cache CocoaPods
         uses: actions/cache@v4
         with:
@@ -56,7 +50,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cocoapods-
 
-      # Cache Flutter pub packages (pub get runs inside Fastlane later)
       - name: Cache Flutter pub
         uses: actions/cache@v4
         with:
@@ -88,7 +81,6 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         run: |
           mkdir -p fastlane
-          # Build api_key.json using a one-line Python command (no heredoc → no YAML issues)
           python3 -c 'import os,json; key=os.environ["ASC_PRIVATE_KEY"].replace("\\n","\n"); open("fastlane/api_key.json","w").write(json.dumps({"key_id":os.environ["ASC_KEY_ID"],"issuer_id":os.environ["ASC_ISSUER_ID"],"key":key,"in_house":False}))'
           echo "APP_STORE_CONNECT_API_KEY_PATH=$GITHUB_WORKSPACE/fastlane/api_key.json" >> $GITHUB_ENV
 
