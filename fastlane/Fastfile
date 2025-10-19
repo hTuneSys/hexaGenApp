@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2025 hexaTune LLC
+# SPDX-License-Identifier: MIT
+
+APP_DIR = "hexagenapp"
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Build the IPA (from hexagenapp/) and upload to TestFlight"
+  lane :beta do
+    setup_ci if ENV['CI']
+
+    Dir.chdir(APP_DIR) do
+      sh("flutter --version")
+      sh("flutter pub get")
+
+      build_number = ENV['BUILD_NUMBER'] || Time.now.strftime("%Y%m%d%H%M")
+      sh("flutter build ipa --release --build-number=#{build_number}")
+    end
+
+    ipa = Dir["#{APP_DIR}/build/ios/ipa/*.ipa"].first
+    UI.user_error!("IPA not found at #{APP_DIR}/build/ios/ipa/*.ipa. Did the build fail?") unless ipa
+
+    api_key_path = ENV['APP_STORE_CONNECT_API_KEY_PATH']
+    UI.user_error!("APP_STORE_CONNECT_API_KEY_PATH is missing or file not found") unless api_key_path && File.exist?(api_key_path)
+
+    upload_to_testflight(
+      ipa: ipa,
+      api_key_path: api_key_path,
+      skip_waiting_for_build_processing: true,
+      notify_external_testers: false,
+      groups: []
+    )
+
+    UI.message("IPA: #{ipa}")
+    UI.success("🎉 TestFlight upload triggered successfully!")
+  end
+end
+

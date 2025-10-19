@@ -1,4 +1,4 @@
-package com.example.hexagenapp
+package com.hexatune.hexagenapp
 
 import io.flutter.embedding.android.FlutterActivity
 
