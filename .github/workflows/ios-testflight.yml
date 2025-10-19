@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
 
     env:
-      BUILD_NUMBER: ${{ github.run_number }} # passed to Fastlane
+      BUILD_NUMBER: ${{ github.run_number }} # forwarded to Fastlane/Fastfile
 
     steps:
       - name: Checkout (default branch)
@@ -36,7 +36,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          # flutter-version: '3.24.3'  # uncomment to pin
+          # flutter-version: '3.24.3'  # (isteğe bağlı) sabitlemek istersen aç
 
       # -----------------------------
       # Speed-ups: caches (optional)
@@ -57,21 +57,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # --- Code signing: import certificate (.p12) into a temp keychain ---
+      # --- Code signing: import certificate (.p12) into the runner keychain ---
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.IOS_CERT_P12 }}
           p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
 
-      # --- Code signing: install provisioning profile (no heredoc, linter-safe) ---
+      # --- Code signing: install provisioning profile (official action) ---
       - name: Install provisioning profile
-        env:
-          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        uses: apple-actions/install-provisioning-profile@v1
+        with:
+          provisioning-profile-base64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+
+      # (Optional) Quick visibility for identities & profiles
+      - name: Show code signing identities & profiles (debug)
         run: |
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          python3 -c 'import os,base64; pp=os.environ.get("IOS_PROVISIONING_PROFILE",""); open(os.path.expanduser("~/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"),"wb").write(base64.b64decode(pp))'
-          echo "Provisioning profile installed at: $HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"
+          security find-identity -v -p codesigning || true
+          ls -l "$HOME/Library/MobileDevice/Provisioning Profiles" || true
 
       # --- CocoaPods (only if Podfile exists) ---
       - name: Install CocoaPods (inside hexagenapp/ios, if Podfile exists)
@@ -82,10 +85,10 @@ jobs:
             pod repo update
             pod install
           else
-            echo "No Podfile found under hexagenapp/ios — skipping pod install. Flutter will handle Pods during build if needed."
+            echo "No Podfile found under hexagenapp/ios — skipping pod install. Flutter may handle Pods during build."
           fi
 
-      # --- Configure App Store Connect API key for fastlane (no heredoc) ---
+      # --- Configure App Store Connect API key for fastlane (json file) ---
       - name: Configure App Store Connect API key (fastlane/api_key.json)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -93,7 +96,18 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         run: |
           mkdir -p fastlane
-          python3 -c 'import os,json; key=os.environ["ASC_PRIVATE_KEY"].replace("\\n","\n"); open("fastlane/api_key.json","w").write(json.dumps({"key_id":os.environ["ASC_KEY_ID"],"issuer_id":os.environ["ASC_ISSUER_ID"],"key":key,"in_house":False}))'
+          python3 - <<'PY'
+          import os, json
+          key = os.environ["ASC_PRIVATE_KEY"].replace("\\n","\n")
+          payload = {
+            "key_id": os.environ["ASC_KEY_ID"],
+            "issuer_id": os.environ["ASC_ISSUER_ID"],
+            "key": key,
+            "in_house": False
+          }
+          with open("fastlane/api_key.json","w") as f:
+            json.dump(payload, f)
+          PY
           echo "APP_STORE_CONNECT_API_KEY_PATH=$GITHUB_WORKSPACE/fastlane/api_key.json" >> $GITHUB_ENV
 
       # --- Build and upload to TestFlight using Fastlane ---
