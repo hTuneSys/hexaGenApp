@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 hexaTune LLC
 # SPDX-License-Identifier: MIT
 
-name: Deploy Flutter to Google Play (Internal)
+name: Android → Upload (Manual Trigger)
 
 on:
   workflow_dispatch:
