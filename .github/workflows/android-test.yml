@@ -39,7 +39,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0" # projene uygun sürüm
+          flutter-version: "3.35.6"
 
       - name: Flutter pub get
         run: flutter pub get
