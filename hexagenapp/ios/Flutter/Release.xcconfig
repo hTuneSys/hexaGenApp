@@ -1,1 +1,8 @@
+
 #include "Generated.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = com.hexatune.hexagenapp
+DEVELOPMENT_TEAM = 3B6JLK5JN9
+CODE_SIGN_STYLE = Manual
+PROVISIONING_PROFILE_SPECIFIER = hexaGen Distribution
+
