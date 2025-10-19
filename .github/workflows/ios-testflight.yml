@@ -8,13 +8,12 @@ on:
 
 jobs:
   build-and-upload:
-    runs-on: macos-latest # or 'macos-26' for Apple Silicon runners
+    runs-on: macos-latest
 
     env:
       BUILD_NUMBER: ${{ github.run_number }} # passed to Fastlane
 
     steps:
-      # Checkout repository default branch (no ref) with full history (safe for tools that inspect git)
       - name: Checkout (default branch)
         uses: actions/checkout@v4
         with:
@@ -23,7 +22,7 @@ jobs:
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "16.4" # pin a stable version
+          xcode-version: "16.4"
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -58,22 +57,35 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # --- Code signing (recommended) ---
-      - name: Import signing certificates and provisioning profile
+      # --- Code signing: import certificate (.p12) into a temp keychain ---
+      - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.IOS_CERT_P12 }}
           p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
-          mobileprovision-file-base64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
 
-      - name: Install CocoaPods (inside hexagenapp/ios)
+      # --- Code signing: install provisioning profile (no heredoc, linter-safe) ---
+      - name: Install provisioning profile
+        env:
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
         run: |
-          sudo gem install cocoapods
-          cd hexagenapp/ios
-          pod repo update
-          pod install
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          python3 -c 'import os,base64; pp=os.environ.get("IOS_PROVISIONING_PROFILE",""); open(os.path.expanduser("~/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"),"wb").write(base64.b64decode(pp))'
+          echo "Provisioning profile installed at: $HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"
 
-      # --- Configure App Store Connect API key for fastlane ---
+      # --- CocoaPods (only if Podfile exists) ---
+      - name: Install CocoaPods (inside hexagenapp/ios, if Podfile exists)
+        run: |
+          if [ -f "hexagenapp/ios/Podfile" ]; then
+            sudo gem install cocoapods
+            cd hexagenapp/ios
+            pod repo update
+            pod install
+          else
+            echo "No Podfile found under hexagenapp/ios — skipping pod install. Flutter will handle Pods during build if needed."
+          fi
+
+      # --- Configure App Store Connect API key for fastlane (no heredoc) ---
       - name: Configure App Store Connect API key (fastlane/api_key.json)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -88,7 +100,7 @@ jobs:
       - name: Build & Upload to TestFlight
         run: fastlane ios beta
 
-      # Make the generated IPA downloadable from the workflow run
+      # Artifact (optional but handy)
       - name: Upload IPA artifact
         if: always()
         uses: actions/upload-artifact@v4
