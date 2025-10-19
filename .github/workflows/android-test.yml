@@ -97,7 +97,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
           packageName: ${{ secrets.PACKAGE_NAME }} # com.hexatune.hexagenapp
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          releaseFiles: hexagenapp/build/app/outputs/bundle/release/app-release.aab
           track: ${{ github.event.inputs.track }} # internal
           status: ${{ github.event.inputs.status }} # completed
           releaseName: ${{ github.event.inputs.releaseName }}
