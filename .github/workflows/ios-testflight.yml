@@ -36,7 +36,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          # flutter-version: '3.24.3'  # (isteğe bağlı) sabitlemek istersen aç
+          # flutter-version: '3.24.3'  # (opsiyonel) pinlemek istersen aç
 
       # -----------------------------
       # Speed-ups: caches (optional)
@@ -64,13 +64,13 @@ jobs:
           p12-file-base64: ${{ secrets.IOS_CERT_P12 }}
           p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
 
-      # --- Code signing: install provisioning profile (official action) ---
-      - name: Install provisioning profile
-        uses: apple-actions/install-provisioning-profile@v1
+      # --- Code signing: import provisioning profile (official action) ---
+      - name: Import provisioning profile
+        uses: apple-actions/import-provisioning-profile@v1
         with:
           provisioning-profile-base64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
 
-      # (Optional) Quick visibility for identities & profiles
+      # (Optional) quick sanity check
       - name: Show code signing identities & profiles (debug)
         run: |
           security find-identity -v -p codesigning || true
