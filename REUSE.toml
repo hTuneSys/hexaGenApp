@@ -24,6 +24,7 @@ path = [
   "hexagenapp/macos/**",
   "hexagenapp/windows/**",
   "hexagenapp/linux/**",
+  "hexagenapp/assets/**",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2025 hexaTune LLC"

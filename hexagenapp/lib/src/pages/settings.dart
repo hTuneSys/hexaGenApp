@@ -5,10 +5,36 @@ import 'package:flutter/material.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
+import 'package:hexagenapp/src/core/service/log_service.dart';
 import 'package:hexagenapp/src/core/error/error.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  final ScrollController _logScrollController = ScrollController();
+  bool _autoScroll = true;
+  LogLevel? _minLogLevel;
+
+  @override
+  void dispose() {
+    _logScrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_autoScroll && _logScrollController.hasClients) {
+      _logScrollController.animateTo(
+        _logScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,20 +43,31 @@ class SettingsPage extends StatelessWidget {
     final lang = AppLocalizations.of(context)!;
 
     return AnimatedBuilder(
-      animation: Listenable.merge([deviceService, storageService]),
+      animation: Listenable.merge([deviceService, storageService, logger]),
       builder: (context, _) {
         if (!deviceService.isInitialized || !storageService.isInitialized) {
           return const Center(child: CircularProgressIndicator());
         }
 
+        // Scroll to bottom when logs update
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
         return RefreshIndicator(
           onRefresh: deviceService.refresh,
-          child: ListView(
-            children: [
-              _buildThemeCard(context, lang, storageService),
-              deviceService.currentDevice == null
-                  ? _buildNoDeviceCard(context, lang)
-                  : _buildDeviceCard(context, lang, deviceService),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _buildTopCard(
+                  context,
+                  lang,
+                  storageService,
+                  deviceService,
+                ),
+              ),
+              SliverFillRemaining(
+                hasScrollBody: true,
+                child: _buildLogMonitorCard(context, lang),
+              ),
             ],
           ),
         );
@@ -38,10 +75,11 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildThemeCard(
+  Widget _buildTopCard(
     BuildContext context,
     AppLocalizations lang,
     StorageService storageService,
+    DeviceService deviceService,
   ) {
     return Card(
       margin: EdgeInsets.zero,
@@ -51,6 +89,7 @@ class SettingsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Theme section
             Row(
               children: [
                 Icon(
@@ -68,62 +107,77 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'system',
-                  label: Text(lang.themeSystem),
-                  icon: const Icon(Icons.brightness_auto),
-                ),
-                ButtonSegment(
-                  value: 'light',
-                  label: Text(lang.themeLight),
-                  icon: const Icon(Icons.light_mode),
-                ),
-                ButtonSegment(
-                  value: 'dark',
-                  label: Text(lang.themeDark),
-                  icon: const Icon(Icons.dark_mode),
-                ),
-              ],
-              selected: {storageService.themeMode},
-              onSelectionChanged: (Set<String> selected) {
-                storageService.setThemeMode(selected.first);
-              },
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: 'system',
+                    label: Text(lang.themeSystem),
+                    icon: const Icon(Icons.brightness_auto),
+                  ),
+                  ButtonSegment(
+                    value: 'light',
+                    label: Text(lang.themeLight),
+                    icon: const Icon(Icons.light_mode),
+                  ),
+                  ButtonSegment(
+                    value: 'dark',
+                    label: Text(lang.themeDark),
+                    icon: const Icon(Icons.dark_mode),
+                  ),
+                ],
+                selected: {storageService.themeMode},
+                onSelectionChanged: (Set<String> selected) {
+                  storageService.setThemeMode(selected.first);
+                },
+              ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoDeviceCard(BuildContext context, AppLocalizations lang) {
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.usb_off, size: 64, color: Theme.of(context).colorScheme.outline),
+            const SizedBox(height: 24),
+            const Divider(),
             const SizedBox(height: 16),
-            Text(lang.deviceNoDeviceConnected, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              lang.devicePleaseConnect,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline),
-              textAlign: TextAlign.center,
-            ),
+            // Device section
+            deviceService.currentDevice == null
+                ? _buildNoDeviceContent(context, lang)
+                : _buildDeviceContent(context, lang, deviceService),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDeviceCard(
+  Widget _buildNoDeviceContent(BuildContext context, AppLocalizations lang) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.usb_off,
+              size: 32,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              lang.deviceNoDeviceConnected,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          lang.devicePleaseConnect,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeviceContent(
     BuildContext context,
     AppLocalizations lang,
     DeviceService deviceService,
@@ -131,7 +185,9 @@ class SettingsPage extends StatelessWidget {
     final device = deviceService.currentDevice!;
     final deviceName = device.name;
     // ignore: unnecessary_null_comparison
-    final name = (deviceName == null || deviceName.trim().isEmpty) ? 'hexaTune' : deviceName;
+    final name = (deviceName == null || deviceName.trim().isEmpty)
+        ? 'hexaTune'
+        : deviceName;
 
     final nameParts = name.split(' ');
     final brand = nameParts.isNotEmpty ? nameParts[0] : 'hexaTune';
@@ -139,95 +195,182 @@ class SettingsPage extends StatelessWidget {
 
     final colorScheme = Theme.of(context).colorScheme;
 
+    return Row(
+      children: [
+        Icon(
+          Icons.usb,
+          size: 24,
+          color: deviceService.isConnected
+              ? colorScheme.primary
+              : colorScheme.outline,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                brand,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (model.isNotEmpty)
+                Text(
+                  model,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        if (deviceService.waitingForResponse)
+          SizedBox(
+            height: 16,
+            width: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colorScheme.primary,
+            ),
+          )
+        else if (deviceService.deviceVersion != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              deviceService.deviceVersion!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          )
+        else if (deviceService.deviceError != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              deviceService.deviceError!.code,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          )
+        else
+          const SizedBox.shrink(),
+      ],
+    );
+  }
+
+  Widget _buildLogMonitorCard(BuildContext context, AppLocalizations lang) {
+    final logs = logger.getRecentLogs(count: 100, minLevel: _minLogLevel);
+
     return Card(
       margin: EdgeInsets.zero,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Row(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.usb,
-              size: 48,
-              color: deviceService.isConnected ? colorScheme.primary : colorScheme.outline,
+            Row(
+              children: [
+                const Spacer(),
+                const Text('Debug'),
+                Switch(
+                  value: logger.debugMode,
+                  onChanged: (value) => logger.debugMode = value,
+                ),
+                const SizedBox(width: 8),
+                const Text('Auto Scroll'),
+                Switch(
+                  value: _autoScroll,
+                  onChanged: (value) => setState(() => _autoScroll = value),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () => logger.clearHistory(),
+                  child: const Text('Clear'),
+                ),
+              ],
             ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    brand,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  if (model.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(model, style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                  const SizedBox(height: 12),
-                  if (deviceService.waitingForResponse)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          lang.deviceQueryingVersion,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    )
-                  else if (deviceService.deviceVersion != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        lang.deviceVersion(deviceService.deviceVersion!),
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    )
-                  else if (deviceService.deviceError != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        lang.deviceError(
-                          deviceService.deviceError!.getLocalizedMessage(lang),
-                          deviceService.deviceError!.code,
-                        ),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onErrorContainer,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<LogLevel?>(
+                segments: const [
+                  ButtonSegment(value: null, label: Text('All')),
+                  ButtonSegment(value: LogLevel.info, label: Text('Info+')),
+                  ButtonSegment(value: LogLevel.warning, label: Text('Warn+')),
+                  ButtonSegment(value: LogLevel.error, label: Text('Error+')),
                 ],
+                selected: {_minLogLevel},
+                onSelectionChanged: (Set<LogLevel?> selected) {
+                  setState(() => _minLogLevel = selected.first);
+                },
               ),
             ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: logs.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No logs yet',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _logScrollController,
+                      itemCount: logs.length,
+                      itemBuilder: (context, index) {
+                        final log = logs[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2.0),
+                          child: Text(
+                            log.toString(),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontFamily: 'monospace',
+                                  color: _getLogColor(context, log.level),
+                                ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 20), // Space for FAB
           ],
         ),
       ),
     );
+  }
+
+  Color _getLogColor(BuildContext context, LogLevel level) {
+    switch (level) {
+      case LogLevel.debug:
+        return Colors.grey;
+      case LogLevel.info:
+        return Colors.white;
+      case LogLevel.warning:
+        return Colors.yellow;
+      case LogLevel.error:
+        return Colors.red;
+      case LogLevel.critical:
+        return Colors.red;
+    }
   }
 }
