@@ -57,7 +57,12 @@ class _SettingsPageState extends State<SettingsPage> {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                child: _buildTopCard(context, lang, storageService, deviceService),
+                child: _buildTopCard(
+                  context,
+                  lang,
+                  storageService,
+                  deviceService,
+                ),
               ),
               SliverFillRemaining(
                 hasScrollBody: true,
@@ -69,8 +74,6 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
-
-
 
   Widget _buildTopCard(
     BuildContext context,
@@ -97,9 +100,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 16),
                 Text(
                   lang.themeMode,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -182,7 +185,9 @@ class _SettingsPageState extends State<SettingsPage> {
     final device = deviceService.currentDevice!;
     final deviceName = device.name;
     // ignore: unnecessary_null_comparison
-    final name = (deviceName == null || deviceName.trim().isEmpty) ? 'hexaTune' : deviceName;
+    final name = (deviceName == null || deviceName.trim().isEmpty)
+        ? 'hexaTune'
+        : deviceName;
 
     final nameParts = name.split(' ');
     final brand = nameParts.isNotEmpty ? nameParts[0] : 'hexaTune';
@@ -195,7 +200,9 @@ class _SettingsPageState extends State<SettingsPage> {
         Icon(
           Icons.usb,
           size: 24,
-          color: deviceService.isConnected ? colorScheme.primary : colorScheme.outline,
+          color: deviceService.isConnected
+              ? colorScheme.primary
+              : colorScheme.outline,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -205,9 +212,9 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               Text(
                 brand,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -335,10 +342,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           padding: const EdgeInsets.symmetric(vertical: 2.0),
                           child: Text(
                             log.toString(),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontFamily: 'monospace',
-                              color: _getLogColor(context, log.level),
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontFamily: 'monospace',
+                                  color: _getLogColor(context, log.level),
+                                ),
                           ),
                         );
                       },
@@ -365,6 +373,4 @@ class _SettingsPageState extends State<SettingsPage> {
         return Colors.red;
     }
   }
-
-
 }
