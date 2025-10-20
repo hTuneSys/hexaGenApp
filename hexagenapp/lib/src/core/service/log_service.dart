@@ -24,14 +24,19 @@ enum LogCategory {
 }
 
 /// Global logging service
-class LogService {
+class LogService extends ChangeNotifier {
   static final LogService _instance = LogService._internal();
   factory LogService() => _instance;
 
   LogService._internal();
 
   /// Debug mode - when false, only errors are logged for production
-  bool debugMode = true;
+  bool _debugMode = true;
+  bool get debugMode => _debugMode;
+  set debugMode(bool value) {
+    _debugMode = value;
+    notifyListeners();
+  }
 
   /// Log storage for potential crash reports (future use)
   final List<LogEntry> _logHistory = [];
@@ -175,6 +180,7 @@ class LogService {
     if (_logHistory.length > _maxHistorySize) {
       _logHistory.removeAt(0);
     }
+    notifyListeners();
   }
 
   /// Get recent logs (for future crash reporting)
@@ -203,6 +209,7 @@ class LogService {
   /// Clear log history
   void clearHistory() {
     _logHistory.clear();
+    notifyListeners();
   }
 
   /// Export logs as string (for crash reports)
@@ -256,10 +263,8 @@ class LogEntry {
 
   @override
   String toString() {
-    final time = timestamp.toIso8601String().substring(11, 23);
-    final levelStr = level.name.toUpperCase().padRight(8);
-    final catStr = category.name.toUpperCase().padRight(10);
-    return '[$time] $levelStr [$catStr] $message';
+    final levelStr = level.name.toUpperCase();
+    return '$levelStr - $message';
   }
 }
 
