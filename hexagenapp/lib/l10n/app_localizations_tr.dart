@@ -91,7 +91,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get increase => 'Arttır';
 
   @override
-  String get clearAll => 'Tümünü Temizle';
+  String get clearAll => 'Temizle';
 
   @override
   String get maxItemsReached => 'Maksimum 64 öğe eklenebilir';
