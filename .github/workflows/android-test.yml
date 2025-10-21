@@ -47,7 +47,7 @@ jobs:
         run: flutter pub get
 
       - name: Gradle cache
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Derive BUILD_NUMBER from run_number
         run: |
