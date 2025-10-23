@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: MIT
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:hexagenapp/src/core/device/device.dart';
+import 'package:hexagenapp/src/core/at/at.dart';
 import 'package:hexagenapp/src/core/error/error.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 
@@ -22,13 +24,27 @@ class DeviceService extends ChangeNotifier {
   MidiDevice? _currentDevice;
   String? _deviceVersion;
   AppError? _deviceError;
+  DeviceStatus _deviceStatus = DeviceStatus.available;
   bool _waitingForResponse = false;
   bool _isInitialized = false;
+
+  // ID generation and command tracking
+  static const int _maxId = 9999;
+  static const Duration _commandTimeout = Duration(seconds: 5);
+  int _nextId = 1;
+  final Map<int, SentCommand> _sentCommands = {};
+  final Map<int, Timer> _commandTimers = {};
+
+  // Notifications
+  static const int _maxNotifications = 5;
+  final List<NotificationItem> _notifications = [];
+  bool get hasUnreadNotifications => _notifications.any((n) => !n.read);
 
   // Getters
   MidiDevice? get currentDevice => _currentDevice;
   String? get deviceVersion => _deviceVersion;
   AppError? get deviceError => _deviceError;
+  DeviceStatus get deviceStatus => _deviceStatus;
   bool get waitingForResponse => _waitingForResponse;
   bool get isConnected =>
       _currentDevice != null && _deviceManager.connectedId != null;
@@ -49,6 +65,47 @@ class DeviceService extends ChangeNotifier {
     _isInitialized = true;
 
     logger.info('Device service initialized', category: LogCategory.device);
+  }
+
+  /// Generate next sequential ID (1-9999, wraps around)
+  int _generateId() {
+    final id = _nextId;
+    _nextId = _nextId % _maxId + 1;
+    return id;
+  }
+
+  /// Track sent command
+  void _trackCommand(int id, String command) {
+    _sentCommands[id] = SentCommand(
+      id,
+      command,
+      DateTime.now(),
+      CommandStatus.pending,
+    );
+    _commandTimers[id] = Timer(_commandTimeout, () {
+      _updateCommandStatus(id, CommandStatus.timeout);
+      _addNotification('Command timeout: $command');
+      _commandTimers.remove(id);
+    });
+    logger.debug(
+      'Tracked command: $command (ID: $id)',
+      category: LogCategory.device,
+    );
+  }
+
+  /// Update command status based on response
+  void _updateCommandStatus(int id, CommandStatus status, {String? errorCode}) {
+    final command = _sentCommands[id];
+    if (command != null) {
+      command.status = status;
+      command.errorCode = errorCode;
+      _commandTimers[id]?.cancel();
+      _commandTimers.remove(id);
+      logger.debug(
+        'Updated command status: ${command.command} (ID: $id) -> $status',
+        category: LogCategory.device,
+      );
+    }
   }
 
   /// Dispose the device service
@@ -72,6 +129,7 @@ class DeviceService extends ChangeNotifier {
         'hexaTune device found: ${hexaDevice.name}',
         category: LogCategory.device,
       );
+      _addNotification('Device connected: ${hexaDevice.name}');
       unawaited(_connectDevice(hexaDevice));
     } else {
       logger.warning('No hexaTune device found', category: LogCategory.device);
@@ -93,7 +151,13 @@ class DeviceService extends ChangeNotifier {
   }
 
   /// Handle device response
-  void _onResponse({String? version, AppError? error, required bool waiting}) {
+  void _onResponse({
+    String? version,
+    AppError? error,
+    DeviceStatus? status,
+    int? responseId,
+    required bool waiting,
+  }) {
     if (version != null) {
       logger.info(
         'Device version received: $version',
@@ -106,9 +170,41 @@ class DeviceService extends ChangeNotifier {
         category: LogCategory.device,
       );
     }
+    if (status != null) {
+      logger.debug(
+        'Device status received: $status',
+        category: LogCategory.device,
+      );
+    }
 
     _deviceVersion = version;
     _deviceError = error;
+    if (status != null) {
+      if (_deviceStatus != status) {
+        _addNotification('Device status changed to ${status.name}');
+      }
+      _deviceStatus = status;
+    }
+
+    // Update command status if responseId provided
+    if (responseId != null) {
+      if (error != null) {
+        _updateCommandStatus(
+          responseId,
+          CommandStatus.error,
+          errorCode: error.code,
+        );
+        _addNotification('Command failed: ${error.code}');
+      } else if (version != null || status != null) {
+        _updateCommandStatus(responseId, CommandStatus.success);
+      }
+    }
+
+    // Add notification for version received
+    if (version != null) {
+      _addNotification('Device version: $version');
+    }
+
     _waitingForResponse = waiting;
     notifyListeners();
   }
@@ -142,21 +238,76 @@ class DeviceService extends ChangeNotifier {
     await _loadDevices();
   }
 
-  /// Send custom AT command (for future use)
-  Future<void> sendCommand(String command) async {
+  /// Send AT command generically
+  Future<void> sendATCommand(ATCommand command) async {
     if (_deviceManager.connectedId == null) {
       logger.warning(
-        'Cannot send command: No device connected',
+        'Cannot send ${command.type.name} command: No device connected',
         category: LogCategory.device,
       );
       return;
     }
-    logger.debug(
-      'Sending custom command: $command',
+    final compiled = command.compile();
+    _trackCommand(command.id, compiled);
+    logger.info(
+      'Sending ${command.type.name} command: $compiled',
       category: LogCategory.midi,
     );
-    // TODO: Implement custom command sending
+    _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
   }
+
+  /// Send AT+FREQ command
+  Future<void> sendFreqCommand(int freq, int timeMs) async {
+    final id = _generateId();
+    final command = ATCommand.freq(id, freq, timeMs);
+    await sendATCommand(command);
+  }
+
+  /// Send AT+SETRGB command
+  Future<void> sendSetRgbCommand(int r, int g, int b) async {
+    final id = _generateId();
+    final command = ATCommand.setRgb(id, r, g, b);
+    await sendATCommand(command);
+  }
+
+  /// Send AT+RESET command
+  Future<void> sendResetCommand() async {
+    final id = _generateId();
+    final command = ATCommand.reset(id);
+    await sendATCommand(command);
+  }
+
+  /// Send AT+FWUPDATE command
+  Future<void> sendFwUpdateCommand() async {
+    final id = _generateId();
+    final command = ATCommand.fwUpdate(id);
+    await sendATCommand(command);
+  }
+
+  /// Send raw data to device
+  void sendData(Uint8List bytes, String deviceId) {
+    _deviceManager.sendData(bytes, deviceId);
+  }
+
+  /// Add notification
+  void _addNotification(String message) {
+    _notifications.insert(0, NotificationItem(message, DateTime.now()));
+    if (_notifications.length > _maxNotifications) {
+      _notifications.removeLast();
+    }
+    notifyListeners();
+  }
+
+  /// Mark all notifications as read
+  void markNotificationsAsRead() {
+    for (final n in _notifications) {
+      n.read = true;
+    }
+    notifyListeners();
+  }
+
+  /// Get notifications
+  List<NotificationItem> get notifications => _notifications;
 }
 
 /// Provider widget for DeviceService

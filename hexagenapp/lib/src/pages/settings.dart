@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
@@ -239,17 +241,40 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           )
         else if (deviceService.deviceVersion != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              deviceService.deviceVersion!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w500,
+          RawGestureDetector(
+            gestures: {
+              LongPressGestureRecognizer:
+                  GestureRecognizerFactoryWithHandlers<
+                    LongPressGestureRecognizer
+                  >(
+                    () => LongPressGestureRecognizer(
+                      duration: const Duration(seconds: 3),
+                    ),
+                    (LongPressGestureRecognizer instance) {
+                      instance.onLongPress = () async {
+                        HapticFeedback.heavyImpact();
+                        await deviceService.sendResetCommand();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Reset command sent')),
+                          );
+                        }
+                      };
+                    },
+                  ),
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                deviceService.deviceVersion!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           )
@@ -360,17 +385,18 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Color _getLogColor(BuildContext context, LogLevel level) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (level) {
       case LogLevel.debug:
-        return Colors.grey;
+        return colorScheme.outline;
       case LogLevel.info:
-        return Colors.white;
+        return colorScheme.onSurface;
       case LogLevel.warning:
-        return Colors.yellow;
+        return colorScheme.tertiary;
       case LogLevel.error:
-        return Colors.red;
+        return colorScheme.error;
       case LogLevel.critical:
-        return Colors.red;
+        return colorScheme.error;
     }
   }
 }
