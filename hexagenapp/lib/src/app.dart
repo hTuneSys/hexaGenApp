@@ -44,7 +44,7 @@ class _HexaGenAppState extends State<HexaGenApp> {
 
   @override
   Widget build(BuildContext context) {
-    TextTheme textTheme = createTextTheme(context, "Inter", "Rajdhani");
+    TextTheme textTheme = createTextTheme(context);
     MaterialTheme theme = MaterialTheme(textTheme);
 
     return StorageServiceProvider(
