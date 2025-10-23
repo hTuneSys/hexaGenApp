@@ -9,7 +9,7 @@ on:
       releaseName:
         description: "Release name (Play Console notu)"
         required: false
-        default: "CI Internal"
+        default: "hexaGen"
       track:
         description: "Play track (internal/alpha/beta/production)"
         required: true
