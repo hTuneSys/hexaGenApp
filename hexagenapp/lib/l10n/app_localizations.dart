@@ -529,6 +529,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No logs yet'**
   String get noLogsYet;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation History'**
+  String get historyTitle;
+
+  /// No description provided for @noOperationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No operations saved yet'**
+  String get noOperationsYet;
+
+  /// No description provided for @operationDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation Date'**
+  String get operationDate;
+
+  /// Total number of items in an operation
+  ///
+  /// In en, this message translates to:
+  /// **'Total Items: {count}'**
+  String totalItemsCount(int count);
+
+  /// Total duration of an operation
+  ///
+  /// In en, this message translates to:
+  /// **'Total Duration: {duration}'**
+  String totalDuration(String duration);
+
+  /// No description provided for @regenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get regenerate;
+
+  /// No description provided for @frequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get frequency;
+
+  /// No description provided for @duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get duration;
+
+  /// No description provided for @operationRegenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation loaded to generation page'**
+  String get operationRegenerated;
 }
 
 class _AppLocalizationsDelegate

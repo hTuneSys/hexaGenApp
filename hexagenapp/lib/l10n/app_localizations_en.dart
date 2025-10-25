@@ -248,4 +248,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noLogsYet => 'No logs yet';
+
+  @override
+  String get historyTitle => 'Operation History';
+
+  @override
+  String get noOperationsYet => 'No operations saved yet';
+
+  @override
+  String get operationDate => 'Operation Date';
+
+  @override
+  String totalItemsCount(int count) {
+    return 'Total Items: $count';
+  }
+
+  @override
+  String totalDuration(String duration) {
+    return 'Total Duration: $duration';
+  }
+
+  @override
+  String get regenerate => 'Regenerate';
+
+  @override
+  String get frequency => 'Frequency';
+
+  @override
+  String get duration => 'Duration';
+
+  @override
+  String get operationRegenerated => 'Operation loaded to generation page';
 }

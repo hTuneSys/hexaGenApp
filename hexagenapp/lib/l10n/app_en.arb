@@ -134,5 +134,23 @@
   "filterInfo": "Info+",
   "filterWarning": "Warn+",
   "filterError": "Error+",
-  "noLogsYet": "No logs yet"
+  "noLogsYet": "No logs yet",
+
+  "historyTitle": "Operation History",
+  "noOperationsYet": "No operations saved yet",
+  "operationDate": "Operation Date",
+  "totalItemsCount": "Total Items: {count}",
+  "@totalItemsCount": {
+    "description": "Total number of items in an operation",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "totalDuration": "Total Duration: {duration}",
+  "@totalDuration": {
+    "description": "Total duration of an operation",
+    "placeholders": { "duration": { "type": "String" } }
+  },
+  "regenerate": "Regenerate",
+  "frequency": "Frequency",
+  "duration": "Duration",
+  "operationRegenerated": "Operation loaded to generation page"
 }

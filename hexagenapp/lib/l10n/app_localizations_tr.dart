@@ -247,4 +247,35 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get noLogsYet => 'Henüz log yok';
+
+  @override
+  String get historyTitle => 'İşlem Geçmişi';
+
+  @override
+  String get noOperationsYet => 'Henüz kayıtlı işlem yok';
+
+  @override
+  String get operationDate => 'İşlem Tarihi';
+
+  @override
+  String totalItemsCount(int count) {
+    return 'Toplam Öğe: $count';
+  }
+
+  @override
+  String totalDuration(String duration) {
+    return 'Toplam Süre: $duration';
+  }
+
+  @override
+  String get regenerate => 'Yeniden Üret';
+
+  @override
+  String get frequency => 'Frekans';
+
+  @override
+  String get duration => 'Süre';
+
+  @override
+  String get operationRegenerated => 'İşlem üretim sayfasına yüklendi';
 }

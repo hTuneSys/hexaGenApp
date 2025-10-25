@@ -134,5 +134,23 @@
   "filterInfo": "Bilgi+",
   "filterWarning": "Uyarı+",
   "filterError": "Hata+",
-  "noLogsYet": "Henüz log yok"
+  "noLogsYet": "Henüz log yok",
+
+  "historyTitle": "İşlem Geçmişi",
+  "noOperationsYet": "Henüz kayıtlı işlem yok",
+  "operationDate": "İşlem Tarihi",
+  "totalItemsCount": "Toplam Öğe: {count}",
+  "@totalItemsCount": {
+    "description": "Bir işlemdeki toplam öğe sayısı",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "totalDuration": "Toplam Süre: {duration}",
+  "@totalDuration": {
+    "description": "Bir işlemin toplam süresi",
+    "placeholders": { "duration": { "type": "String" } }
+  },
+  "regenerate": "Yeniden Üret",
+  "frequency": "Frekans",
+  "duration": "Süre",
+  "operationRegenerated": "İşlem üretim sayfasına yüklendi"
 }

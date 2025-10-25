@@ -31,9 +31,15 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   final GlobalKey _generationKey = GlobalKey();
 
+  void _handleRegenerate(List<Map<String, dynamic>> items, int repeatCount) {
+    final state = _generationKey.currentState as dynamic;
+    state?.loadSequence(items, repeatCount);
+    setState(() => _selectedTab = MainPageTab.generation);
+  }
+
   late final List<Widget> _pages = <Widget>[
     const HowToUsePage(),
-    const HistoryPage(),
+    HistoryPage(onRegenerate: _handleRegenerate),
     GenerationPage(
       key: _generationKey,
       onItemCountChanged: (count) {

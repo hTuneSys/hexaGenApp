@@ -110,6 +110,22 @@ class _GenerationPageState extends State<GenerationPage> {
     });
   }
 
+  void loadSequence(List<Map<String, dynamic>> items, int repeatCount) {
+    setState(() {
+      _sequence.clear();
+      for (var item in items) {
+        _sequence.add(
+          _SeqItem(
+            freqHz: (item['freqHz'] as num).toDouble(),
+            seconds: (item['seconds'] as num).toDouble(),
+          ),
+        );
+      }
+      _repeatCount = repeatCount;
+    });
+    widget.onItemCountChanged?.call(_sequence.length);
+  }
+
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
