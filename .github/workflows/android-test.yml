@@ -49,7 +49,6 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # --- Otomatik buildNumber ---
       - name: Derive BUILD_NUMBER from run_number
         run: |
           echo "BUILD_NUMBER=$((10000 + GITHUB_RUN_NUMBER))" >> $GITHUB_ENV
@@ -66,7 +65,6 @@ jobs:
           fi
           echo "pubspec version -> $(grep '^version:' pubspec.yaml)"
 
-      # --- İmzalama ---
       - name: Prepare signing (keystore & key.properties)
         run: |
           mkdir -p android/app
@@ -81,24 +79,21 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
 
-      # --- Build ---
       - name: Build AAB (release)
         run: flutter build appbundle --release
 
-      # --- AAB doğrula (yoksa hata ver) ---
       - name: Verify AAB exists
         run: |
           ls -lah build/app/outputs/bundle/release/ || true
           test -f build/app/outputs/bundle/release/app-release.aab
 
-      # --- Play Console'a yükle ---
-      - name: Upload to Google Play (Internal)
+      - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: ${{ secrets.PACKAGE_NAME }} # com.hexatune.hexagenapp
+          packageName: ${{ secrets.PACKAGE_NAME }}
           releaseFiles: hexagenapp/build/app/outputs/bundle/release/app-release.aab
-          track: ${{ github.event.inputs.track }} # internal
-          status: ${{ github.event.inputs.status }} # completed
+          track: ${{ github.event.inputs.track }}
+          status: ${{ github.event.inputs.status }}
           releaseName: ${{ github.event.inputs.releaseName }}
           inAppUpdatePriority: 0
