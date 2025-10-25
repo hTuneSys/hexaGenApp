@@ -10,6 +10,9 @@ import 'package:hexagenapp/src/pages/settings.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
+import 'package:hexagenapp/src/core/service/storage_service.dart';
+import 'package:hexagenapp/src/core/at/at.dart';
+import 'package:hexagenapp/src/core/service/log_service.dart';
 
 enum MainPageTab { howTo, history, generation, products, settings }
 
@@ -20,15 +23,19 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   MainPageTab _selectedTab = MainPageTab.howTo;
   int _generationItemCount = 0;
   OverlayEntry? _notificationOverlay;
+  bool _isSending = false;
+
+  final GlobalKey _generationKey = GlobalKey();
 
   late final List<Widget> _pages = <Widget>[
     const HowToUsePage(),
     const HistoryPage(),
     GenerationPage(
+      key: _generationKey,
       onItemCountChanged: (count) {
         setState(() => _generationItemCount = count);
       },
@@ -37,18 +44,135 @@ class _MainPageState extends State<MainPage> {
     const SettingsPage(),
   ];
 
-  void _onFabPressed() {
-    final lang = AppLocalizations.of(context)!;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _listenToBackgroundService();
+  }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && _isSending) {
+      _stopOperation();
+    }
+  }
+
+  void _listenToBackgroundService() {}
+
+  void _onFabPressed() {
     if (_selectedTab != MainPageTab.generation) {
       setState(() {
         _selectedTab = MainPageTab.generation;
       });
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(lang.generateSignal)));
+    } else if (_generationItemCount > 0 && !_isSending) {
+      _startOperation();
+    } else if (_isSending) {
+      _stopOperation();
     }
+  }
+
+  void _startOperation() async {
+    final state = _generationKey.currentState as dynamic;
+    final sequence = state?.getSequence() ?? [];
+    final repeatCount = state?.getRepeatCount() ?? 1;
+    final operationId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    logger.print(
+      'MainPage: Starting operation with ${sequence.length} items, repeat $repeatCount',
+    );
+    setState(() => _isSending = true);
+
+    final deviceService = DeviceServiceProvider.of(context);
+    bool success = true;
+    bool cancelled = false;
+
+    try {
+      for (int r = 0; r < repeatCount && !cancelled; r++) {
+        if (!_isSending) {
+          cancelled = true;
+          break;
+        }
+        logger.print('MainPage: Starting repeat $r');
+        for (final item in sequence) {
+          if (!_isSending) {
+            cancelled = true;
+            break;
+          }
+          final freqHz = item['freqHz'] as int;
+          final timeMs = ((item['seconds'] as double) * 1000).round();
+          logger.print('MainPage: Sending FREQ $freqHz Hz for ${timeMs}ms');
+          try {
+            final status = await deviceService.sendFreqCommandAndWait(
+              freqHz,
+              timeMs,
+            );
+            logger.print('MainPage: Command status: $status');
+            if (status != CommandStatus.success) {
+              success = false;
+              break;
+            }
+          } catch (e) {
+            logger.print('MainPage: Exception in sendFreqCommandAndWait: $e');
+            success = false;
+            break;
+          }
+        }
+        if (!success) break;
+      }
+    } catch (e) {
+      logger.print('MainPage: Exception in loop: $e');
+      success = false;
+    }
+
+    if (success && !cancelled) {
+      logger.print('MainPage: Sending complete');
+      _saveOperation(operationId);
+    } else if (cancelled) {
+      logger.print('MainPage: Cancelled, sending reset');
+      try {
+        await deviceService.sendResetCommand();
+        logger.print('MainPage: Reset sent');
+      } catch (e) {
+        logger.print('MainPage: Exception sending reset: $e');
+      }
+    }
+
+    setState(() => _isSending = false);
+  }
+
+  void _stopOperation() {
+    logger.print('MainPage: Stopping operation');
+    setState(() => _isSending = false);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Operation stopped')));
+  }
+
+  void _saveOperation(String operationId) {
+    final state = _generationKey.currentState as dynamic;
+    final sequence = state?.getSequence() ?? [];
+    final repeatCount = state?.getRepeatCount() ?? 1;
+
+    final operation = {
+      'id': operationId,
+      'timestamp': DateTime.now().toIso8601String(),
+      'repeatCount': repeatCount,
+      'items': sequence,
+    };
+
+    final storageService = StorageServiceProvider.of(context);
+    storageService.saveOperation(operation);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Operation completed and saved')),
+    );
   }
 
   void _showNotifications() {
@@ -167,6 +291,7 @@ class _MainPageState extends State<MainPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(lang.appName),
         actions: <Widget>[
+          Icon(Symbols.circle, color: _isSending ? Colors.green : Colors.red),
           IconButton(
             icon: Icon(
               deviceService.hasUnreadNotifications
@@ -225,7 +350,9 @@ class _MainPageState extends State<MainPage> {
         onPressed: _onFabPressed,
         tooltip: lang.generateSignal,
         child: Icon(
-          _generationItemCount > 0 ? Symbols.autoplay : Symbols.cadence,
+          _isSending
+              ? Symbols.stop
+              : (_generationItemCount > 0 ? Symbols.autoplay : Symbols.cadence),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

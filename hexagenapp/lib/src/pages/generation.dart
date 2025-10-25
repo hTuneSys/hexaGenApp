@@ -23,7 +23,9 @@ class _GenerationPageState extends State<GenerationPage> {
   static const double _maxHz = 20_000_000;
   double _sliderHz = 1_000_000;
 
-  final TextEditingController _secondsCtrl = TextEditingController(text: '1.0');
+  final TextEditingController _secondsCtrl = TextEditingController(
+    text: '10.0',
+  );
   final List<_SeqItem> _sequence = <_SeqItem>[];
   int _repeatCount = 1;
 
@@ -73,6 +75,14 @@ class _GenerationPageState extends State<GenerationPage> {
     });
     widget.onItemCountChanged?.call(_sequence.length);
   }
+
+  List<Map<String, dynamic>> getSequence() {
+    return _sequence
+        .map((item) => {'freqHz': item.freqHz.toInt(), 'seconds': item.seconds})
+        .toList();
+  }
+
+  int getRepeatCount() => _repeatCount;
 
   @override
   Widget build(BuildContext context) {

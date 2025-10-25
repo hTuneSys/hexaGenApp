@@ -201,6 +201,9 @@ class HexaTuneDeviceManager {
 
   /// Handle AT command response
   void _handleATResponse(Uint8List bytes) {
+    logger.print(
+      'Received MIDI data: ${bytes.length} bytes (Hex: ${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')})',
+    );
     logger.midi('Received MIDI data: ${bytes.length} bytes');
 
     // Buffer'a ekle

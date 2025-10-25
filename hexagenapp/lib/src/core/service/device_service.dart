@@ -158,6 +158,9 @@ class DeviceService extends ChangeNotifier {
     int? responseId,
     required bool waiting,
   }) {
+    logger.print(
+      'DeviceService: _onResponse called - version: $version, error: ${error?.code}, status: $status, responseId: $responseId, waiting: $waiting',
+    );
     if (version != null) {
       logger.info(
         'Device version received: $version',
@@ -188,6 +191,7 @@ class DeviceService extends ChangeNotifier {
 
     // Update command status if responseId provided
     if (responseId != null) {
+      logger.print('DeviceService: Updating status for responseId $responseId');
       if (error != null) {
         _updateCommandStatus(
           responseId,
@@ -248,12 +252,16 @@ class DeviceService extends ChangeNotifier {
       return;
     }
     final compiled = command.compile();
+    final sysex = command.buildSysEx();
     _trackCommand(command.id, compiled);
     logger.info(
       'Sending ${command.type.name} command: $compiled',
       category: LogCategory.midi,
     );
-    _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
+    logger.print(
+      'Sent SysEx: ${sysex.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+    );
+    _deviceManager.sendData(sysex, _deviceManager.connectedId!);
   }
 
   /// Send AT+FREQ command
@@ -261,6 +269,51 @@ class DeviceService extends ChangeNotifier {
     final id = _generateId();
     final command = ATCommand.freq(id, freq, timeMs);
     await sendATCommand(command);
+  }
+
+  /// Send AT+FREQ command and wait for response
+  Future<CommandStatus> sendFreqCommandAndWait(int freq, int timeMs) async {
+    final completer = Completer<CommandStatus>();
+    final id = _generateId();
+    final command = ATCommand.freq(id, freq, timeMs);
+    final compiled = command.compile();
+    _trackCommand(id, compiled);
+    logger.print('DeviceService: Tracking command ID $id: $compiled');
+
+    // Listen for response
+    void onResponse() {
+      final sentCommand = _sentCommands[id];
+      if (sentCommand != null && sentCommand.status != CommandStatus.pending) {
+        logger.print(
+          'DeviceService: Command $id completed with status: ${sentCommand.status}',
+        );
+        completer.complete(sentCommand.status);
+        removeListener(onResponse);
+      }
+    }
+
+    addListener(onResponse);
+    logger.print('DeviceService: Added listener for command $id');
+
+    logger.info(
+      'Sending FREQ command and waiting: $compiled',
+      category: LogCategory.midi,
+    );
+    _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
+    logger.print('DeviceService: Sent SysEx for command $id');
+
+    // Timeout
+    final timeout = Duration(milliseconds: timeMs + 5000);
+    Future.delayed(timeout, () {
+      if (!completer.isCompleted) {
+        logger.print('DeviceService: Timeout for command $id');
+        _updateCommandStatus(id, CommandStatus.timeout);
+        completer.complete(CommandStatus.timeout);
+        removeListener(onResponse);
+      }
+    });
+
+    return completer.future;
   }
 
   /// Send AT+SETRGB command
