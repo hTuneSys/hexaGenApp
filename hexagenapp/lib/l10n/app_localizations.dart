@@ -397,6 +397,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get themeDark;
+
+  /// No description provided for @operationCompletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation completed successfully'**
+  String get operationCompletedSuccessfully;
+
+  /// No description provided for @operationStoppedByUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation stopped by user'**
+  String get operationStoppedByUser;
+
+  /// No description provided for @operationFailedWithErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed with errors'**
+  String get operationFailedWithErrors;
+
+  /// No description provided for @operationStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation stopped'**
+  String get operationStopped;
+
+  /// No description provided for @operationCompletedAndSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation completed and saved'**
+  String get operationCompletedAndSaved;
+
+  /// No description provided for @operationFailedCheckDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed. Please check the device.'**
+  String get operationFailedCheckDevice;
+
+  /// Command timeout notification
+  ///
+  /// In en, this message translates to:
+  /// **'Command timeout: {command}'**
+  String commandTimeout(String command);
+
+  /// Device connected notification
+  ///
+  /// In en, this message translates to:
+  /// **'Device connected: {name}'**
+  String deviceConnected(String name);
+
+  /// Device status changed notification
+  ///
+  /// In en, this message translates to:
+  /// **'Device status changed to {status}'**
+  String deviceStatusChanged(String status);
+
+  /// Command failed notification
+  ///
+  /// In en, this message translates to:
+  /// **'Command failed: {code}'**
+  String commandFailed(String code);
+
+  /// Device version notification
+  ///
+  /// In en, this message translates to:
+  /// **'Device version: {version}'**
+  String deviceVersionReceived(String version);
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @noNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications'**
+  String get noNotifications;
+
+  /// No description provided for @resetCommandSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset command sent'**
+  String get resetCommandSent;
+
+  /// No description provided for @debug.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug'**
+  String get debug;
+
+  /// No description provided for @autoScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Scroll'**
+  String get autoScroll;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info+'**
+  String get filterInfo;
+
+  /// No description provided for @filterWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warn+'**
+  String get filterWarning;
+
+  /// No description provided for @filterError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error+'**
+  String get filterError;
+
+  /// No description provided for @noLogsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs yet'**
+  String get noLogsYet;
 }
 
 class _AppLocalizationsDelegate

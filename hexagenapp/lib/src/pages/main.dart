@@ -39,6 +39,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       onItemCountChanged: (count) {
         setState(() => _generationItemCount = count);
       },
+      onItemStatusChanged: (index, status) {},
     ),
     const ProductsPage(),
     const SettingsPage(),
@@ -83,10 +84,15 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     final sequence = state?.getSequence() ?? [];
     final repeatCount = state?.getRepeatCount() ?? 1;
     final operationId = DateTime.now().millisecondsSinceEpoch.toString();
+    final lang = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
 
     logger.print(
       'MainPage: Starting operation with ${sequence.length} items, repeat $repeatCount',
     );
+
+    state?.resetAllItemStatuses();
     setState(() => _isSending = true);
 
     final deviceService = DeviceServiceProvider.of(context);
@@ -100,14 +106,18 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
           break;
         }
         logger.print('MainPage: Starting repeat $r');
-        for (final item in sequence) {
+        for (int i = 0; i < sequence.length; i++) {
           if (!_isSending) {
             cancelled = true;
             break;
           }
+          final item = sequence[i];
           final freqHz = item['freqHz'] as int;
           final timeMs = ((item['seconds'] as double) * 1000).round();
+
+          state?.updateItemStatus(i, ItemStatus.processing);
           logger.print('MainPage: Sending FREQ $freqHz Hz for ${timeMs}ms');
+
           try {
             final status = await deviceService.sendFreqCommandAndWait(
               freqHz,
@@ -115,16 +125,23 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
             );
             logger.print('MainPage: Command status: $status');
             if (status != CommandStatus.success) {
+              state?.updateItemStatus(i, ItemStatus.error);
               success = false;
               break;
             }
+            state?.updateItemStatus(i, ItemStatus.completed);
           } catch (e) {
             logger.print('MainPage: Exception in sendFreqCommandAndWait: $e');
+            state?.updateItemStatus(i, ItemStatus.error);
             success = false;
             break;
           }
         }
         if (!success) break;
+
+        if (r < repeatCount - 1) {
+          state?.resetAllItemStatuses();
+        }
       }
     } catch (e) {
       logger.print('MainPage: Exception in loop: $e');
@@ -134,25 +151,54 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     if (success && !cancelled) {
       logger.print('MainPage: Sending complete');
       _saveOperation(operationId);
+      deviceService.addNotification(lang.operationCompletedSuccessfully);
     } else if (cancelled) {
       logger.print('MainPage: Cancelled, sending reset');
+      state?.resetAllItemStatuses();
+      deviceService.addNotification(lang.operationStoppedByUser);
       try {
         await deviceService.sendResetCommand();
         logger.print('MainPage: Reset sent');
       } catch (e) {
         logger.print('MainPage: Exception sending reset: $e');
       }
+    } else {
+      state?.resetAllItemStatuses();
+      final errorMessage = lang.operationFailedCheckDevice;
+      deviceService.addNotification(lang.operationFailedWithErrors);
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: errorColor),
+        );
+      }
     }
 
     setState(() => _isSending = false);
   }
 
-  void _stopOperation() {
+  void _stopOperation() async {
     logger.print('MainPage: Stopping operation');
     setState(() => _isSending = false);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Operation stopped')));
+
+    final state = _generationKey.currentState as dynamic;
+    state?.resetAllItemStatuses();
+
+    final deviceService = DeviceServiceProvider.of(context);
+    final lang = AppLocalizations.of(context)!;
+    final stoppedMessage = lang.operationStopped;
+    final messenger = ScaffoldMessenger.of(context);
+    deviceService.addNotification(lang.operationStoppedByUser);
+
+    try {
+      await deviceService.sendResetCommand();
+      logger.print('MainPage: Reset command sent immediately');
+    } catch (e) {
+      logger.print('MainPage: Exception sending reset: $e');
+    }
+
+    if (context.mounted) {
+      messenger.showSnackBar(SnackBar(content: Text(stoppedMessage)));
+    }
   }
 
   void _saveOperation(String operationId) {
@@ -170,13 +216,15 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     final storageService = StorageServiceProvider.of(context);
     storageService.saveOperation(operation);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Operation completed and saved')),
-    );
+    final lang = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(lang.operationCompletedAndSaved)));
   }
 
   void _showNotifications() {
     final deviceService = DeviceServiceProvider.of(context);
+    final lang = AppLocalizations.of(context)!;
     if (_notificationOverlay != null) {
       _notificationOverlay!.remove();
       _notificationOverlay = null;
@@ -185,7 +233,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     }
 
     _notificationOverlay = OverlayEntry(
-      builder: (context) => GestureDetector(
+      builder: (overlayContext) => GestureDetector(
         onTap: () {
           _notificationOverlay?.remove();
           _notificationOverlay = null;
@@ -196,18 +244,18 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
           child: Stack(
             children: [
               Positioned(
-                top: MediaQuery.of(context).padding.top + kToolbarHeight,
+                top: MediaQuery.of(overlayContext).padding.top + kToolbarHeight,
                 left: 16,
                 right: 16,
                 child: GestureDetector(
-                  onTap: () {}, // Prevent dismissal when tapping the panel
+                  onTap: () {},
                   child: Material(
                     elevation: 8,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       constraints: const BoxConstraints(maxHeight: 300),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: Theme.of(overlayContext).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -218,9 +266,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
                             child: Row(
                               children: [
                                 Text(
-                                  'Notifications',
+                                  lang.notificationsTitle,
                                   style: Theme.of(
-                                    context,
+                                    overlayContext,
                                   ).textTheme.titleMedium,
                                 ),
                                 const Spacer(),
@@ -238,7 +286,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
                           const Divider(height: 1),
                           Expanded(
                             child: deviceService.notifications.isEmpty
-                                ? const Center(child: Text('No notifications'))
+                                ? Center(child: Text(lang.noNotifications))
                                 : ListView.builder(
                                     itemCount:
                                         deviceService.notifications.length,
@@ -285,13 +333,17 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
     final deviceService = DeviceServiceProvider.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: colorScheme.inversePrimary,
         title: Text(lang.appName),
         actions: <Widget>[
-          Icon(Symbols.circle, color: _isSending ? Colors.green : Colors.red),
+          Icon(
+            Symbols.circle,
+            color: _isSending ? colorScheme.tertiary : colorScheme.error,
+          ),
           IconButton(
             icon: Icon(
               deviceService.hasUnreadNotifications

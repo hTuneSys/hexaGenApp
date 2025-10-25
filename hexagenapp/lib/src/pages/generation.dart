@@ -6,10 +6,19 @@ import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 
+enum ItemStatus { pending, processing, completed, error }
+
+typedef ItemStatusCallback = void Function(int index, ItemStatus status);
+
 class GenerationPage extends StatefulWidget {
   final ValueChanged<int>? onItemCountChanged;
+  final ItemStatusCallback? onItemStatusChanged;
 
-  const GenerationPage({super.key, this.onItemCountChanged});
+  const GenerationPage({
+    super.key,
+    this.onItemCountChanged,
+    this.onItemStatusChanged,
+  });
 
   @override
   State<GenerationPage> createState() => _GenerationPageState();
@@ -83,6 +92,23 @@ class _GenerationPageState extends State<GenerationPage> {
   }
 
   int getRepeatCount() => _repeatCount;
+
+  void updateItemStatus(int index, ItemStatus status) {
+    if (index >= 0 && index < _sequence.length) {
+      setState(() {
+        _sequence[index].status = status;
+      });
+      widget.onItemStatusChanged?.call(index, status);
+    }
+  }
+
+  void resetAllItemStatuses() {
+    setState(() {
+      for (var item in _sequence) {
+        item.status = ItemStatus.pending;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -210,20 +236,45 @@ class _GenerationPageState extends State<GenerationPage> {
                   },
                   itemBuilder: (context, i) {
                     final it = _sequence[i];
-                    return ListTile(
-                      key: ValueKey('${it.freqHz}_${it.seconds}_$i'),
-                      leading: const Icon(Symbols.cadence),
-                      title: Text(_fmtHz(it.freqHz)),
-                      subtitle: Text(
-                        lang.secondsShort(it.seconds.toStringAsFixed(3)),
+                    final colorScheme = Theme.of(context).colorScheme;
+                    final statusColor = switch (it.status) {
+                      ItemStatus.pending => null,
+                      ItemStatus.processing => colorScheme.primaryContainer,
+                      ItemStatus.completed => null,
+                      ItemStatus.error => colorScheme.errorContainer,
+                    };
+                    final statusIcon = switch (it.status) {
+                      ItemStatus.pending => null,
+                      ItemStatus.processing => Icon(
+                        Symbols.pending,
+                        color: colorScheme.primary,
                       ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () {
-                          setState(() => _sequence.removeAt(i));
-                          widget.onItemCountChanged?.call(_sequence.length);
-                        },
-                        tooltip: lang.delete,
+                      ItemStatus.completed => Icon(
+                        Symbols.check_circle,
+                        color: colorScheme.tertiary,
+                      ),
+                      ItemStatus.error => Icon(
+                        Symbols.cancel,
+                        color: colorScheme.error,
+                      ),
+                    };
+                    return Container(
+                      key: ValueKey('${it.freqHz}_${it.seconds}_$i'),
+                      color: statusColor,
+                      child: ListTile(
+                        leading: statusIcon ?? const Icon(Symbols.cadence),
+                        title: Text(_fmtHz(it.freqHz)),
+                        subtitle: Text(
+                          lang.secondsShort(it.seconds.toStringAsFixed(3)),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () {
+                            setState(() => _sequence.removeAt(i));
+                            widget.onItemCountChanged?.call(_sequence.length);
+                          },
+                          tooltip: lang.delete,
+                        ),
                       ),
                     );
                   },
@@ -314,5 +365,6 @@ class _GenerationPageState extends State<GenerationPage> {
 class _SeqItem {
   final double freqHz;
   final double seconds;
-  const _SeqItem({required this.freqHz, required this.seconds});
+  ItemStatus status = ItemStatus.pending;
+  _SeqItem({required this.freqHz, required this.seconds});
 }

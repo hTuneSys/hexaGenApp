@@ -170,4 +170,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDark => 'Dark';
+
+  @override
+  String get operationCompletedSuccessfully =>
+      'Generation completed successfully';
+
+  @override
+  String get operationStoppedByUser => 'Operation stopped by user';
+
+  @override
+  String get operationFailedWithErrors => 'Operation failed with errors';
+
+  @override
+  String get operationStopped => 'Operation stopped';
+
+  @override
+  String get operationCompletedAndSaved => 'Operation completed and saved';
+
+  @override
+  String get operationFailedCheckDevice =>
+      'Operation failed. Please check the device.';
+
+  @override
+  String commandTimeout(String command) {
+    return 'Command timeout: $command';
+  }
+
+  @override
+  String deviceConnected(String name) {
+    return 'Device connected: $name';
+  }
+
+  @override
+  String deviceStatusChanged(String status) {
+    return 'Device status changed to $status';
+  }
+
+  @override
+  String commandFailed(String code) {
+    return 'Command failed: $code';
+  }
+
+  @override
+  String deviceVersionReceived(String version) {
+    return 'Device version: $version';
+  }
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get noNotifications => 'No notifications';
+
+  @override
+  String get resetCommandSent => 'Reset command sent';
+
+  @override
+  String get debug => 'Debug';
+
+  @override
+  String get autoScroll => 'Auto Scroll';
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterInfo => 'Info+';
+
+  @override
+  String get filterWarning => 'Warn+';
+
+  @override
+  String get filterError => 'Error+';
+
+  @override
+  String get noLogsYet => 'No logs yet';
 }

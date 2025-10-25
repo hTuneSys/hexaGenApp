@@ -89,5 +89,50 @@
   "themeMode": "Tema Modu",
   "themeSystem": "Sistem",
   "themeLight": "Açık",
-  "themeDark": "Koyu"
+  "themeDark": "Koyu",
+
+  "operationCompletedSuccessfully": "Üretim başarıyla tamamlandı",
+  "operationStoppedByUser": "İşlem kullanıcı tarafından durduruldu",
+  "operationFailedWithErrors": "İşlem hatalarla başarısız oldu",
+  "operationStopped": "İşlem durduruldu",
+  "operationCompletedAndSaved": "İşlem tamamlandı ve kaydedildi",
+  "operationFailedCheckDevice": "İşlem başarısız oldu. Lütfen cihazı kontrol edin.",
+  
+  "commandTimeout": "Komut zaman aşımı: {command}",
+  "@commandTimeout": {
+    "description": "Komut zaman aşımı bildirimi",
+    "placeholders": { "command": { "type": "String" } }
+  },
+  "deviceConnected": "Cihaz bağlandı: {name}",
+  "@deviceConnected": {
+    "description": "Cihaz bağlandı bildirimi",
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deviceStatusChanged": "Cihaz durumu değişti: {status}",
+  "@deviceStatusChanged": {
+    "description": "Cihaz durumu değişti bildirimi",
+    "placeholders": { "status": { "type": "String" } }
+  },
+  "commandFailed": "Komut başarısız: {code}",
+  "@commandFailed": {
+    "description": "Komut başarısız bildirimi",
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "deviceVersionReceived": "Cihaz sürümü: {version}",
+  "@deviceVersionReceived": {
+    "description": "Cihaz sürümü bildirimi",
+    "placeholders": { "version": { "type": "String" } }
+  },
+
+  "notificationsTitle": "Bildirimler",
+  "noNotifications": "Bildirim yok",
+  "resetCommandSent": "Reset komutu gönderildi",
+  "debug": "Hata Ayıklama",
+  "autoScroll": "Otomatik Kaydırma",
+  "clear": "Temizle",
+  "filterAll": "Tümü",
+  "filterInfo": "Bilgi+",
+  "filterWarning": "Uyarı+",
+  "filterError": "Hata+",
+  "noLogsYet": "Henüz log yok"
 }

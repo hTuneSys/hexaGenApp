@@ -89,5 +89,50 @@
   "themeMode": "Theme Mode",
   "themeSystem": "System",
   "themeLight": "Light",
-  "themeDark": "Dark"
+  "themeDark": "Dark",
+
+  "operationCompletedSuccessfully": "Generation completed successfully",
+  "operationStoppedByUser": "Operation stopped by user",
+  "operationFailedWithErrors": "Operation failed with errors",
+  "operationStopped": "Operation stopped",
+  "operationCompletedAndSaved": "Operation completed and saved",
+  "operationFailedCheckDevice": "Operation failed. Please check the device.",
+  
+  "commandTimeout": "Command timeout: {command}",
+  "@commandTimeout": {
+    "description": "Command timeout notification",
+    "placeholders": { "command": { "type": "String" } }
+  },
+  "deviceConnected": "Device connected: {name}",
+  "@deviceConnected": {
+    "description": "Device connected notification",
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deviceStatusChanged": "Device status changed to {status}",
+  "@deviceStatusChanged": {
+    "description": "Device status changed notification",
+    "placeholders": { "status": { "type": "String" } }
+  },
+  "commandFailed": "Command failed: {code}",
+  "@commandFailed": {
+    "description": "Command failed notification",
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "deviceVersionReceived": "Device version: {version}",
+  "@deviceVersionReceived": {
+    "description": "Device version notification",
+    "placeholders": { "version": { "type": "String" } }
+  },
+
+  "notificationsTitle": "Notifications",
+  "noNotifications": "No notifications",
+  "resetCommandSent": "Reset command sent",
+  "debug": "Debug",
+  "autoScroll": "Auto Scroll",
+  "clear": "Clear",
+  "filterAll": "All",
+  "filterInfo": "Info+",
+  "filterWarning": "Warn+",
+  "filterError": "Error+",
+  "noLogsYet": "No logs yet"
 }

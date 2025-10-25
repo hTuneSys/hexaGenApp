@@ -102,9 +102,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 16),
                 Text(
                   lang.themeMode,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
@@ -214,9 +212,7 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               Text(
                 brand,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -255,8 +251,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         HapticFeedback.heavyImpact();
                         await deviceService.sendResetCommand();
                         if (context.mounted) {
+                          final l = AppLocalizations.of(context)!;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Reset command sent')),
+                            SnackBar(content: Text(l.resetCommandSent)),
                           );
                         }
                       };
@@ -313,13 +310,13 @@ class _SettingsPageState extends State<SettingsPage> {
             Row(
               children: [
                 const Spacer(),
-                const Text('Debug'),
+                Text(lang.debug),
                 Switch(
                   value: logger.debugMode,
                   onChanged: (value) => logger.debugMode = value,
                 ),
                 const SizedBox(width: 8),
-                const Text('Auto Scroll'),
+                Text(lang.autoScroll),
                 Switch(
                   value: _autoScroll,
                   onChanged: (value) => setState(() => _autoScroll = value),
@@ -327,7 +324,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () => logger.clearHistory(),
-                  child: const Text('Clear'),
+                  child: Text(lang.clear),
                 ),
               ],
             ),
@@ -335,11 +332,20 @@ class _SettingsPageState extends State<SettingsPage> {
             SizedBox(
               width: double.infinity,
               child: SegmentedButton<LogLevel?>(
-                segments: const [
-                  ButtonSegment(value: null, label: Text('All')),
-                  ButtonSegment(value: LogLevel.info, label: Text('Info+')),
-                  ButtonSegment(value: LogLevel.warning, label: Text('Warn+')),
-                  ButtonSegment(value: LogLevel.error, label: Text('Error+')),
+                segments: [
+                  ButtonSegment(value: null, label: Text(lang.filterAll)),
+                  ButtonSegment(
+                    value: LogLevel.info,
+                    label: Text(lang.filterInfo),
+                  ),
+                  ButtonSegment(
+                    value: LogLevel.warning,
+                    label: Text(lang.filterWarning),
+                  ),
+                  ButtonSegment(
+                    value: LogLevel.error,
+                    label: Text(lang.filterError),
+                  ),
                 ],
                 selected: {_minLogLevel},
                 onSelectionChanged: (Set<LogLevel?> selected) {
@@ -352,7 +358,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: logs.isEmpty
                   ? Center(
                       child: Text(
-                        'No logs yet',
+                        lang.noLogsYet,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).colorScheme.outline,
                         ),

@@ -30,10 +30,10 @@ class DeviceService extends ChangeNotifier {
 
   // ID generation and command tracking
   static const int _maxId = 9999;
-  static const Duration _commandTimeout = Duration(seconds: 5);
   int _nextId = 1;
   final Map<int, SentCommand> _sentCommands = {};
   final Map<int, Timer> _commandTimers = {};
+  final Map<int, Completer<CommandStatus>> _commandCompleters = {};
 
   // Notifications
   static const int _maxNotifications = 5;
@@ -75,18 +75,20 @@ class DeviceService extends ChangeNotifier {
   }
 
   /// Track sent command
-  void _trackCommand(int id, String command) {
+  void _trackCommand(int id, String command, {Duration? timeout}) {
     _sentCommands[id] = SentCommand(
       id,
       command,
       DateTime.now(),
       CommandStatus.pending,
     );
-    _commandTimers[id] = Timer(_commandTimeout, () {
-      _updateCommandStatus(id, CommandStatus.timeout);
-      _addNotification('Command timeout: $command');
-      _commandTimers.remove(id);
-    });
+    if (timeout != null) {
+      _commandTimers[id] = Timer(timeout, () {
+        _updateCommandStatus(id, CommandStatus.timeout);
+        addNotification('Command timeout: $command');
+        _commandTimers.remove(id);
+      });
+    }
     logger.debug(
       'Tracked command: $command (ID: $id)',
       category: LogCategory.device,
@@ -105,6 +107,12 @@ class DeviceService extends ChangeNotifier {
         'Updated command status: ${command.command} (ID: $id) -> $status',
         category: LogCategory.device,
       );
+
+      final completer = _commandCompleters[id];
+      if (completer != null && !completer.isCompleted) {
+        completer.complete(status);
+        _commandCompleters.remove(id);
+      }
     }
   }
 
@@ -129,7 +137,7 @@ class DeviceService extends ChangeNotifier {
         'hexaTune device found: ${hexaDevice.name}',
         category: LogCategory.device,
       );
-      _addNotification('Device connected: ${hexaDevice.name}');
+      addNotification('Device connected: ${hexaDevice.name}');
       unawaited(_connectDevice(hexaDevice));
     } else {
       logger.warning('No hexaTune device found', category: LogCategory.device);
@@ -184,7 +192,7 @@ class DeviceService extends ChangeNotifier {
     _deviceError = error;
     if (status != null) {
       if (_deviceStatus != status) {
-        _addNotification('Device status changed to ${status.name}');
+        addNotification('Device status changed to ${status.name}');
       }
       _deviceStatus = status;
     }
@@ -198,15 +206,15 @@ class DeviceService extends ChangeNotifier {
           CommandStatus.error,
           errorCode: error.code,
         );
-        _addNotification('Command failed: ${error.code}');
-      } else if (version != null || status != null) {
+        addNotification('Command failed: ${error.code}');
+      } else {
         _updateCommandStatus(responseId, CommandStatus.success);
       }
     }
 
     // Add notification for version received
     if (version != null) {
-      _addNotification('Device version: $version');
+      addNotification('Device version: $version');
     }
 
     _waitingForResponse = waiting;
@@ -277,23 +285,12 @@ class DeviceService extends ChangeNotifier {
     final id = _generateId();
     final command = ATCommand.freq(id, freq, timeMs);
     final compiled = command.compile();
-    _trackCommand(id, compiled);
+
+    _commandCompleters[id] = completer;
+
+    final timeout = Duration(milliseconds: timeMs + 5000);
+    _trackCommand(id, compiled, timeout: timeout);
     logger.print('DeviceService: Tracking command ID $id: $compiled');
-
-    // Listen for response
-    void onResponse() {
-      final sentCommand = _sentCommands[id];
-      if (sentCommand != null && sentCommand.status != CommandStatus.pending) {
-        logger.print(
-          'DeviceService: Command $id completed with status: ${sentCommand.status}',
-        );
-        completer.complete(sentCommand.status);
-        removeListener(onResponse);
-      }
-    }
-
-    addListener(onResponse);
-    logger.print('DeviceService: Added listener for command $id');
 
     logger.info(
       'Sending FREQ command and waiting: $compiled',
@@ -301,17 +298,6 @@ class DeviceService extends ChangeNotifier {
     );
     _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
     logger.print('DeviceService: Sent SysEx for command $id');
-
-    // Timeout
-    final timeout = Duration(milliseconds: timeMs + 5000);
-    Future.delayed(timeout, () {
-      if (!completer.isCompleted) {
-        logger.print('DeviceService: Timeout for command $id');
-        _updateCommandStatus(id, CommandStatus.timeout);
-        completer.complete(CommandStatus.timeout);
-        removeListener(onResponse);
-      }
-    });
 
     return completer.future;
   }
@@ -343,7 +329,7 @@ class DeviceService extends ChangeNotifier {
   }
 
   /// Add notification
-  void _addNotification(String message) {
+  void addNotification(String message) {
     _notifications.insert(0, NotificationItem(message, DateTime.now()));
     if (_notifications.length > _maxNotifications) {
       _notifications.removeLast();
