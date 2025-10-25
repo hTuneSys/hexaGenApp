@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:hexagenapp/src/app.dart';
+import 'package:hexagenapp/src/core/service/notification_service.dart';
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
@@ -41,6 +42,7 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeService();
+  await NotificationService().initialize();
   FlutterBackgroundService().startService();
   runApp(const HexaGenApp());
 }

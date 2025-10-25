@@ -11,6 +11,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
+import 'package:hexagenapp/src/core/service/notification_service.dart';
 import 'package:hexagenapp/src/core/at/at.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 
@@ -28,6 +29,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _generationItemCount = 0;
   OverlayEntry? _notificationOverlay;
   bool _isSending = false;
+  AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
 
   final GlobalKey _generationKey = GlobalKey();
 
@@ -66,7 +68,8 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused && _isSending) {
+    _lifecycleState = state;
+    if (state == AppLifecycleState.detached && _isSending) {
       _stopOperation();
     }
   }
@@ -158,6 +161,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       logger.print('MainPage: Sending complete');
       _saveOperation(operationId);
       deviceService.addNotification(lang.operationCompletedSuccessfully);
+
+      if (_lifecycleState != AppLifecycleState.resumed) {
+        await NotificationService().showNotification(
+          title: 'hexaGen',
+          body: lang.operationCompletedSuccessfully,
+        );
+      }
     } else if (cancelled) {
       logger.print('MainPage: Cancelled, sending reset');
       state?.resetAllItemStatuses();
@@ -172,6 +182,15 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       state?.resetAllItemStatuses();
       final errorMessage = lang.operationFailedCheckDevice;
       deviceService.addNotification(lang.operationFailedWithErrors);
+
+      if (_lifecycleState != AppLifecycleState.resumed) {
+        await NotificationService().showNotification(
+          title: 'hexaGen',
+          body: lang.operationFailedWithErrors,
+          isError: true,
+        );
+      }
+
       if (context.mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text(errorMessage), backgroundColor: errorColor),
