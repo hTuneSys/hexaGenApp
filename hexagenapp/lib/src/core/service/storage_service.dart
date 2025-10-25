@@ -35,6 +35,17 @@ class StorageService extends ChangeNotifier {
     _themeMode = mode;
     notifyListeners();
   }
+
+  Future<void> saveOperation(Map<String, dynamic> operation) async {
+    if (_localStorage == null) return;
+    await _localStorage!.saveOperation(operation);
+    notifyListeners();
+  }
+
+  List<Map<String, dynamic>> getSavedOperations() {
+    if (_localStorage == null) return [];
+    return _localStorage!.getSavedOperations();
+  }
 }
 
 class StorageServiceProvider extends InheritedNotifier<StorageService> {

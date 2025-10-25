@@ -14,6 +14,7 @@ enum LogLevel {
 
 /// Log categories for organizing logs
 enum LogCategory {
+  printOnly, // For print-only messages (not stored)
   app, // Application lifecycle
   navigation, // Page navigation
   device, // Device connection/communication
@@ -45,6 +46,7 @@ class LogService extends ChangeNotifier {
   /// Main logging method
   void log(
     String message, {
+    bool isAddHistory = true,
     LogLevel level = LogLevel.info,
     LogCategory category = LogCategory.app,
     Object? error,
@@ -60,7 +62,7 @@ class LogService extends ChangeNotifier {
       stackTrace: stackTrace,
     );
 
-    _addToHistory(entry);
+    if (isAddHistory) _addToHistory(entry);
 
     // In production mode (debugMode = false), only log warnings and errors
     if (!debugMode && level.index < LogLevel.warning.index) {
@@ -81,6 +83,16 @@ class LogService extends ChangeNotifier {
         debugPrint(formattedMessage);
       }
     }
+  }
+
+  /// Print-only log (not stored)
+  void print(String message) {
+    log(
+      message,
+      isAddHistory: false,
+      level: LogLevel.info,
+      category: LogCategory.printOnly,
+    );
   }
 
   /// Convenience methods for each log level

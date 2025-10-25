@@ -170,4 +170,112 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get themeDark => 'Koyu';
+
+  @override
+  String get operationCompletedSuccessfully => 'Üretim başarıyla tamamlandı';
+
+  @override
+  String get operationStoppedByUser => 'İşlem kullanıcı tarafından durduruldu';
+
+  @override
+  String get operationFailedWithErrors => 'İşlem hatalarla başarısız oldu';
+
+  @override
+  String get operationStopped => 'İşlem durduruldu';
+
+  @override
+  String get operationCompletedAndSaved => 'İşlem tamamlandı ve kaydedildi';
+
+  @override
+  String get operationFailedCheckDevice =>
+      'İşlem başarısız oldu. Lütfen cihazı kontrol edin.';
+
+  @override
+  String commandTimeout(String command) {
+    return 'Komut zaman aşımı: $command';
+  }
+
+  @override
+  String deviceConnected(String name) {
+    return 'Cihaz bağlandı: $name';
+  }
+
+  @override
+  String deviceStatusChanged(String status) {
+    return 'Cihaz durumu değişti: $status';
+  }
+
+  @override
+  String commandFailed(String code) {
+    return 'Komut başarısız: $code';
+  }
+
+  @override
+  String deviceVersionReceived(String version) {
+    return 'Cihaz sürümü: $version';
+  }
+
+  @override
+  String get notificationsTitle => 'Bildirimler';
+
+  @override
+  String get noNotifications => 'Bildirim yok';
+
+  @override
+  String get resetCommandSent => 'Reset komutu gönderildi';
+
+  @override
+  String get debug => 'Hata Ayıklama';
+
+  @override
+  String get autoScroll => 'Otomatik Kaydırma';
+
+  @override
+  String get clear => 'Temizle';
+
+  @override
+  String get filterAll => 'Tümü';
+
+  @override
+  String get filterInfo => 'Bilgi+';
+
+  @override
+  String get filterWarning => 'Uyarı+';
+
+  @override
+  String get filterError => 'Hata+';
+
+  @override
+  String get noLogsYet => 'Henüz log yok';
+
+  @override
+  String get historyTitle => 'İşlem Geçmişi';
+
+  @override
+  String get noOperationsYet => 'Henüz kayıtlı işlem yok';
+
+  @override
+  String get operationDate => 'İşlem Tarihi';
+
+  @override
+  String totalItemsCount(int count) {
+    return 'Toplam Öğe: $count';
+  }
+
+  @override
+  String totalDuration(String duration) {
+    return 'Toplam Süre: $duration';
+  }
+
+  @override
+  String get regenerate => 'Yeniden Üret';
+
+  @override
+  String get frequency => 'Frekans';
+
+  @override
+  String get duration => 'Süre';
+
+  @override
+  String get operationRegenerated => 'İşlem üretim sayfasına yüklendi';
 }

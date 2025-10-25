@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
@@ -100,9 +102,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 16),
                 Text(
                   lang.themeMode,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
             ),
@@ -212,9 +212,7 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               Text(
                 brand,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -239,17 +237,41 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           )
         else if (deviceService.deviceVersion != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              deviceService.deviceVersion!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w500,
+          RawGestureDetector(
+            gestures: {
+              LongPressGestureRecognizer:
+                  GestureRecognizerFactoryWithHandlers<
+                    LongPressGestureRecognizer
+                  >(
+                    () => LongPressGestureRecognizer(
+                      duration: const Duration(seconds: 3),
+                    ),
+                    (LongPressGestureRecognizer instance) {
+                      instance.onLongPress = () async {
+                        HapticFeedback.heavyImpact();
+                        await deviceService.sendResetCommand();
+                        if (context.mounted) {
+                          final l = AppLocalizations.of(context)!;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l.resetCommandSent)),
+                          );
+                        }
+                      };
+                    },
+                  ),
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                deviceService.deviceVersion!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           )
@@ -288,13 +310,13 @@ class _SettingsPageState extends State<SettingsPage> {
             Row(
               children: [
                 const Spacer(),
-                const Text('Debug'),
+                Text(lang.debug),
                 Switch(
                   value: logger.debugMode,
                   onChanged: (value) => logger.debugMode = value,
                 ),
                 const SizedBox(width: 8),
-                const Text('Auto Scroll'),
+                Text(lang.autoScroll),
                 Switch(
                   value: _autoScroll,
                   onChanged: (value) => setState(() => _autoScroll = value),
@@ -302,7 +324,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () => logger.clearHistory(),
-                  child: const Text('Clear'),
+                  child: Text(lang.clear),
                 ),
               ],
             ),
@@ -310,11 +332,20 @@ class _SettingsPageState extends State<SettingsPage> {
             SizedBox(
               width: double.infinity,
               child: SegmentedButton<LogLevel?>(
-                segments: const [
-                  ButtonSegment(value: null, label: Text('All')),
-                  ButtonSegment(value: LogLevel.info, label: Text('Info+')),
-                  ButtonSegment(value: LogLevel.warning, label: Text('Warn+')),
-                  ButtonSegment(value: LogLevel.error, label: Text('Error+')),
+                segments: [
+                  ButtonSegment(value: null, label: Text(lang.filterAll)),
+                  ButtonSegment(
+                    value: LogLevel.info,
+                    label: Text(lang.filterInfo),
+                  ),
+                  ButtonSegment(
+                    value: LogLevel.warning,
+                    label: Text(lang.filterWarning),
+                  ),
+                  ButtonSegment(
+                    value: LogLevel.error,
+                    label: Text(lang.filterError),
+                  ),
                 ],
                 selected: {_minLogLevel},
                 onSelectionChanged: (Set<LogLevel?> selected) {
@@ -327,7 +358,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: logs.isEmpty
                   ? Center(
                       child: Text(
-                        'No logs yet',
+                        lang.noLogsYet,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).colorScheme.outline,
                         ),
@@ -360,17 +391,18 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Color _getLogColor(BuildContext context, LogLevel level) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (level) {
       case LogLevel.debug:
-        return Colors.grey;
+        return colorScheme.outline;
       case LogLevel.info:
-        return Colors.white;
+        return colorScheme.onSurface;
       case LogLevel.warning:
-        return Colors.yellow;
+        return colorScheme.tertiary;
       case LogLevel.error:
-        return Colors.red;
+        return colorScheme.error;
       case LogLevel.critical:
-        return Colors.red;
+        return colorScheme.error;
     }
   }
 }

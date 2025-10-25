@@ -6,13 +6,19 @@ import 'dart:typed_data';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:hexagenapp/src/core/error/error.dart';
-import 'package:hexagenapp/src/core/device/at.dart';
-import 'package:hexagenapp/src/core/device/sysex.dart';
+import 'package:hexagenapp/src/core/at/at.dart';
+import 'package:hexagenapp/src/core/sysex/sysex.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 
 /// Device response callback
 typedef DeviceResponseCallback =
-    void Function({String? version, AppError? error, required bool waiting});
+    void Function({
+      String? version,
+      AppError? error,
+      DeviceStatus? status,
+      int? responseId,
+      required bool waiting,
+    });
 
 /// HexaTune device manager
 class HexaTuneDeviceManager {
@@ -131,8 +137,8 @@ class HexaTuneDeviceManager {
       }
 
       if (_connectedId == deviceId) {
-        // Extra delay - cihazın firmware'inin hazır olması için
-        // Firmware birden fazla task başlatıyor, hazır olması ~1-2 saniye sürebilir
+        // Extra delay - to allow the device's firmware to be ready
+        // Firmware starts multiple tasks, it may take ~1-2 seconds to be ready
         await Future.delayed(const Duration(milliseconds: 1500));
         sendATVersion(deviceId);
       }
@@ -146,16 +152,28 @@ class HexaTuneDeviceManager {
 
   /// Send AT+VERSION? command
   void sendATVersion(String deviceId) {
-    final bytes = ATCommand.buildVersionQuery();
+    final command = ATCommand.version();
+    final bytes = command.buildSysEx();
     _waitingForResponse = true;
     _sysexBuffer.clear();
-    _notifyResponse(version: null, error: null, waiting: true);
+    _notifyResponse(
+      version: null,
+      error: null,
+      status: null,
+      responseId: null,
+      waiting: true,
+    );
 
     logger.midi('Sending AT+VERSION? command (${bytes.length} bytes)');
 
     _midi.sendData(bytes, deviceId: deviceId);
 
-    // Set timeout - 10 saniye yanıt gelmezse
+    // Track the command (ID 0 for version query)
+    // Note: Firmware uses ID 0 for version, so we track with 0
+    // For future commands, use generated IDs
+    // _trackCommand(0, 'AT+VERSION?'); // If DeviceService had access
+
+    // Set timeout - if no response in 10 seconds
     _responseTimeout?.cancel();
     _responseTimeout = Timer(const Duration(seconds: 10), () {
       if (_waitingForResponse) {
@@ -165,15 +183,27 @@ class HexaTuneDeviceManager {
         );
         _waitingForResponse = false;
         _sysexBuffer.clear();
-        _notifyResponse(version: 'No response', error: null, waiting: false);
+        _notifyResponse(
+          version: 'No response',
+          error: null,
+          status: null,
+          responseId: null,
+          waiting: false,
+        );
       }
     });
   }
 
+  /// Send raw data
+  void sendData(Uint8List bytes, String deviceId) {
+    _midi.sendData(bytes, deviceId: deviceId);
+  }
+
   /// Handle AT command response
   void _handleATResponse(Uint8List bytes) {
-    if (!_waitingForResponse) return;
-
+    logger.print(
+      'Received MIDI data: ${bytes.length} bytes (Hex: ${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')})',
+    );
     logger.midi('Received MIDI data: ${bytes.length} bytes');
 
     // Buffer'a ekle
@@ -197,7 +227,7 @@ class HexaTuneDeviceManager {
       final bufferedData = Uint8List.fromList(_sysexBuffer);
       final message = SysEx.extractSysexPayload(bufferedData);
 
-      // Buffer'ı temizle
+      // Clear the buffer
       _sysexBuffer.clear();
 
       if (message == null) {
@@ -212,7 +242,7 @@ class HexaTuneDeviceManager {
       logger.midi('Decoded AT response: "$message"');
       _waitingForResponse = false;
 
-      final response = ATCommand.parseResponse(message);
+      final response = parseATResponse(message);
 
       if (response == null) {
         logger.warning(
@@ -225,28 +255,63 @@ class HexaTuneDeviceManager {
       switch (response.type) {
         case ATResponseType.error:
           logger.warning(
-            'AT Error: ${response.errorCode}',
+            'AT Error: ${response.errorCode} (id: ${response.id})',
             category: LogCategory.midi,
           );
-          final error = AppErrorExtension.fromCode(response.errorCode ?? '');
-          _notifyResponse(version: null, error: error, waiting: false);
-          break;
-
-        case ATResponseType.version:
-          logger.info(
-            'AT Version: ${response.version}',
-            category: LogCategory.midi,
-          );
+          final error = AppErrorExtension.fromCode(response.errorCode);
+          final id = int.tryParse(response.id) ?? 0;
           _notifyResponse(
-            version: response.version,
-            error: null,
+            version: null,
+            error: error,
+            status: null,
+            responseId: id,
             waiting: false,
           );
           break;
 
-        case ATResponseType.ok:
-          logger.info('AT OK received', category: LogCategory.midi);
-          _notifyResponse(version: 'OK', error: null, waiting: false);
+        case ATResponseType.version:
+          logger.info(
+            'AT Version: ${response.version} (id: ${response.id})',
+            category: LogCategory.midi,
+          );
+          final id = int.tryParse(response.id) ?? 0;
+          _notifyResponse(
+            version: response.version,
+            error: null,
+            status: null,
+            responseId: id,
+            waiting: false,
+          );
+          break;
+
+        case ATResponseType.done:
+          logger.info(
+            'AT Done (id: ${response.id})',
+            category: LogCategory.midi,
+          );
+          final id = int.tryParse(response.id) ?? 0;
+          _notifyResponse(
+            version: null,
+            error: null,
+            status: null,
+            responseId: id,
+            waiting: false,
+          );
+          break;
+
+        case ATResponseType.status:
+          logger.debug(
+            'AT Status: ${response.status} (id: ${response.id})',
+            category: LogCategory.midi,
+          );
+          final id = int.tryParse(response.id) ?? 0;
+          _notifyResponse(
+            version: null,
+            error: null,
+            status: response.status,
+            responseId: id,
+            waiting: false,
+          );
           break;
       }
     } catch (e, stack) {
@@ -265,9 +330,17 @@ class HexaTuneDeviceManager {
   void _notifyResponse({
     String? version,
     AppError? error,
+    DeviceStatus? status,
+    int? responseId,
     required bool waiting,
   }) {
-    _responseCallback?.call(version: version, error: error, waiting: waiting);
+    _responseCallback?.call(
+      version: version,
+      error: error,
+      status: status,
+      responseId: responseId,
+      waiting: waiting,
+    );
   }
 
   /// Get current connection status
