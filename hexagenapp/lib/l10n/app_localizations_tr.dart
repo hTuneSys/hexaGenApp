@@ -134,6 +134,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get unknownCommand => 'Bilinmeyen komut';
 
   @override
+  String get operationStepsFull => 'İşlem adımları dolu (maks 64)';
+
+  @override
   String get deviceNoDeviceConnected => 'Cihaz Bağlı Değil';
 
   @override

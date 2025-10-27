@@ -17,6 +17,8 @@ typedef DeviceResponseCallback =
       AppError? error,
       DeviceStatus? status,
       int? responseId,
+      String? operationStatus,
+      int? operationStepId,
       required bool waiting,
     });
 
@@ -284,6 +286,38 @@ class HexaTuneDeviceManager {
           );
           break;
 
+        case ATResponseType.operation:
+          logger.info(
+            'AT Operation: status=${response.operationStatus}, stepId=${response.operationStepId} (id: ${response.id})',
+            category: LogCategory.midi,
+          );
+          final id = int.tryParse(response.id) ?? 0;
+          _notifyResponse(
+            version: null,
+            error: null,
+            status: null,
+            responseId: id,
+            operationStatus: response.operationStatus,
+            operationStepId: response.operationStepId,
+            waiting: false,
+          );
+          break;
+
+        case ATResponseType.freq:
+          logger.info(
+            'AT Freq: completed=${response.freqCompleted} (id: ${response.id})',
+            category: LogCategory.midi,
+          );
+          final id = int.tryParse(response.id) ?? 0;
+          _notifyResponse(
+            version: null,
+            error: null,
+            status: null,
+            responseId: id,
+            waiting: false,
+          );
+          break;
+
         case ATResponseType.done:
           logger.info(
             'AT Done (id: ${response.id})',
@@ -332,6 +366,8 @@ class HexaTuneDeviceManager {
     AppError? error,
     DeviceStatus? status,
     int? responseId,
+    String? operationStatus,
+    int? operationStepId,
     required bool waiting,
   }) {
     _responseCallback?.call(
@@ -339,6 +375,8 @@ class HexaTuneDeviceManager {
       error: error,
       status: status,
       responseId: responseId,
+      operationStatus: operationStatus,
+      operationStepId: operationStepId,
       waiting: waiting,
     );
   }

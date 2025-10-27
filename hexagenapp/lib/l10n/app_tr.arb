@@ -65,6 +65,7 @@
   "paramValue": "Parametre değeri hatası",
   "notAQuery": "Sorgu değil",
   "unknownCommand": "Bilinmeyen komut",
+  "operationStepsFull": "İşlem adımları dolu (maks 64)",
 
   "deviceNoDeviceConnected": "Cihaz Bağlı Değil",
   "devicePleaseConnect": "Lütfen bir hexaTune cihazı bağlayın",

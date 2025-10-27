@@ -65,6 +65,7 @@
   "paramValue": "Param value",
   "notAQuery": "Not a query",
   "unknownCommand": "Unknown command",
+  "operationStepsFull": "Operation steps full (max 64)",
 
   "deviceNoDeviceConnected": "No Device Connected",
   "devicePleaseConnect": "Please connect a hexaTune device",

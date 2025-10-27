@@ -28,6 +28,12 @@ class DeviceService extends ChangeNotifier {
   bool _waitingForResponse = false;
   bool _isInitialized = false;
 
+  // Operation state tracking
+  int? _currentOperationId;
+  String? _currentOperationStatus; // PREPARE, GENERATE, GENERATING
+  int? _currentGeneratingStepId;
+  AppError? _currentOperationError; // Track operation-specific errors
+
   // ID generation and command tracking
   static const int _maxId = 9999;
   int _nextId = 1;
@@ -49,6 +55,10 @@ class DeviceService extends ChangeNotifier {
   bool get isConnected =>
       _currentDevice != null && _deviceManager.connectedId != null;
   bool get isInitialized => _isInitialized;
+  int? get currentOperationId => _currentOperationId;
+  String? get currentOperationStatus => _currentOperationStatus;
+  int? get currentGeneratingStepId => _currentGeneratingStepId;
+  AppError? get currentOperationError => _currentOperationError;
 
   /// Initialize the device service
   Future<void> initialize() async {
@@ -164,10 +174,12 @@ class DeviceService extends ChangeNotifier {
     AppError? error,
     DeviceStatus? status,
     int? responseId,
+    String? operationStatus,
+    int? operationStepId,
     required bool waiting,
   }) {
     logger.print(
-      'DeviceService: _onResponse called - version: $version, error: ${error?.code}, status: $status, responseId: $responseId, waiting: $waiting',
+      'DeviceService: _onResponse called - version: $version, error: ${error?.code}, status: $status, responseId: $responseId, operationStatus: $operationStatus, operationStepId: $operationStepId, waiting: $waiting',
     );
     if (version != null) {
       logger.info(
@@ -197,6 +209,25 @@ class DeviceService extends ChangeNotifier {
       _deviceStatus = status;
     }
 
+    // Update operation status if provided
+    if (operationStatus != null) {
+      logger.info(
+        'Operation status update: $operationStatus (stepId: $operationStepId)',
+        category: LogCategory.device,
+      );
+      _currentOperationStatus = operationStatus;
+      _currentGeneratingStepId = operationStepId;
+
+      // Mark operation as complete if status is COMPLETED
+      if (operationStatus == 'COMPLETED' ||
+          operationStatus.contains('COMPLETED')) {
+        logger.info(
+          'Operation $_currentOperationId completed',
+          category: LogCategory.device,
+        );
+      }
+    }
+
     // Update command status if responseId provided
     if (responseId != null) {
       logger.print('DeviceService: Updating status for responseId $responseId');
@@ -207,6 +238,16 @@ class DeviceService extends ChangeNotifier {
           errorCode: error.code,
         );
         addNotification('Command failed: ${error.code}');
+
+        // Track operation-specific errors
+        if (_currentOperationId != null && responseId == _currentOperationId) {
+          logger.warning(
+            'Operation error detected: ${error.code} for operation $_currentOperationId',
+            category: LogCategory.device,
+          );
+          _currentOperationError = error;
+          _currentOperationStatus = 'ERROR';
+        }
       } else {
         _updateCommandStatus(responseId, CommandStatus.success);
       }
@@ -321,6 +362,90 @@ class DeviceService extends ChangeNotifier {
     final id = _generateId();
     final command = ATCommand.fwUpdate(id);
     await sendATCommand(command);
+  }
+
+  /// Send AT+OPERATION=id#PREPARE command and wait for response
+  Future<CommandStatus> sendOperationPrepare(int operationId) async {
+    final completer = Completer<CommandStatus>();
+    final command = ATCommand.operationPrepare(operationId);
+    final compiled = command.compile();
+
+    _commandCompleters[operationId] = completer;
+    _currentOperationId = operationId;
+    _currentOperationStatus = 'PREPARE';
+
+    _trackCommand(operationId, compiled, timeout: const Duration(seconds: 5));
+    logger.info(
+      'Sending OPERATION PREPARE and waiting: $compiled',
+      category: LogCategory.midi,
+    );
+    _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
+
+    return completer.future;
+  }
+
+  /// Send AT+OPERATION=id#GENERATE command (don't wait for response, use polling instead)
+  Future<void> sendOperationGenerate(int operationId) async {
+    final command = ATCommand.operationGenerate(operationId);
+    final compiled = command.compile();
+
+    _currentOperationStatus = 'GENERATE';
+
+    // Don't track with timeout since we're polling instead
+    logger.info(
+      'Sending OPERATION GENERATE (polling for status): $compiled',
+      category: LogCategory.midi,
+    );
+    _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
+  }
+
+  /// Query operation status (AT+OPERATION?)
+  Future<void> queryOperationStatus() async {
+    if (_deviceManager.connectedId == null) {
+      logger.warning(
+        'Cannot query operation status: No device connected',
+        category: LogCategory.device,
+      );
+      return;
+    }
+    final command = ATCommand.operationQuery();
+    final compiled = command.compile();
+    logger.info(
+      'Querying operation status: $compiled',
+      category: LogCategory.midi,
+    );
+    _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
+  }
+
+  /// Send AT+FREQ command for batch operation (with step ID)
+  Future<CommandStatus> sendFreqCommandForOperation(
+    int stepId,
+    int freq,
+    int timeMs,
+  ) async {
+    final completer = Completer<CommandStatus>();
+    final command = ATCommand.freq(stepId, freq, timeMs);
+    final compiled = command.compile();
+
+    _commandCompleters[stepId] = completer;
+
+    _trackCommand(stepId, compiled, timeout: const Duration(seconds: 5));
+    logger.info(
+      'Sending FREQ command (step $stepId) and waiting: $compiled',
+      category: LogCategory.midi,
+    );
+    _deviceManager.sendData(command.buildSysEx(), _deviceManager.connectedId!);
+
+    return completer.future;
+  }
+
+  /// Reset operation state
+  void resetOperationState() {
+    _currentOperationId = null;
+    _currentOperationStatus = null;
+    _currentGeneratingStepId = null;
+    _currentOperationError = null;
+    notifyListeners();
   }
 
   /// Send raw data to device
