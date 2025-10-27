@@ -34,7 +34,7 @@ class HexaTuneDeviceManager {
   String? _connectedId;
   bool _waitingForResponse = false;
   Timer? _responseTimeout;
-  final List<int> _sysexBuffer = []; // SysEx mesaj buffer
+  final List<int> _sysexBuffer = []; // SysEx message buffer
 
   DeviceResponseCallback? _responseCallback;
 
@@ -208,10 +208,10 @@ class HexaTuneDeviceManager {
     );
     logger.midi('Received MIDI data: ${bytes.length} bytes');
 
-    // Buffer'a ekle
+    // Add to buffer
     _sysexBuffer.addAll(bytes);
 
-    // F7 (SysEx end) geldi mi kontrol et
+    // Check if F7 (SysEx end) marker received
     final hasEndMarker = _sysexBuffer.contains(0xF7);
 
     if (!hasEndMarker) {
@@ -219,7 +219,7 @@ class HexaTuneDeviceManager {
         'Waiting for more data (buffer: ${_sysexBuffer.length} bytes)',
         category: LogCategory.midi,
       );
-      return; // Daha fazla veri bekle
+      return; // Wait for more data
     }
 
     // Cancel timeout

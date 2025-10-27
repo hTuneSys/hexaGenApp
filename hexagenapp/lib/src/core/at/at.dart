@@ -100,7 +100,7 @@ ATResponse? extractAndParseATResponse(Uint8List data) {
 /// Formats:
 /// AT+VERSION=0#version
 /// AT+ERROR=id#error_code
-/// AT+DONE=id (firmware'de DONE response var, ama command yok)
+/// AT+DONE=id (firmware has DONE response, but no DONE command)
 /// AT+STATUS=0#AVAILABLE or GENERATING
 /// AT+OPERATION=id#PREPARE#COMPLETED
 /// AT+OPERATION=id#GENERATE#COMPLETED
