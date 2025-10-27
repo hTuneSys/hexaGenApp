@@ -123,7 +123,7 @@ jobs:
       # Artifact (optional but handy)
       - name: Upload IPA artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ios-ipa
           path: hexagenapp/build/ios/ipa/*.ipa
