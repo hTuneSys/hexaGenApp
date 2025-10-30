@@ -33,6 +33,10 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _operationId = 1; // Auto-incrementing operation ID
   Timer? _pollingTimer;
 
+  // Repeat functionality
+  int _currentRepeatIteration = 0;
+  int _totalRepeats = 1;
+
   final GlobalKey _generationKey = GlobalKey();
 
   void _handleRegenerate(List<Map<String, dynamic>> items, int repeatCount) {
@@ -91,16 +95,34 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     final state = _generationKey.currentState as dynamic;
     final sequence = state?.getSequence() ?? [];
     final repeatCount = state?.getRepeatCount() ?? 1;
+
+    // Initialize repeat tracking
+    _currentRepeatIteration = 1;
+    _totalRepeats = repeatCount;
+
+    logger.print(
+      'MainPage: Starting operation ID $_operationId with ${sequence.length} items, total repeats: $_totalRepeats',
+    );
+
+    setState(() => _isSending = true);
+
+    // Execute the first iteration
+    await _executeIteration(state, sequence);
+  }
+
+  Future<void> _executeIteration(
+    dynamic state,
+    List<Map<String, dynamic>> sequence,
+  ) async {
     final lang = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final errorColor = Theme.of(context).colorScheme.error;
 
     logger.print(
-      'MainPage: Starting operation ID $_operationId with ${sequence.length} items, repeat $repeatCount',
+      'MainPage: === Iteration $_currentRepeatIteration/$_totalRepeats ===',
     );
 
     state?.resetAllItemStatuses();
-    setState(() => _isSending = true);
 
     final deviceService = DeviceServiceProvider.of(context);
     bool success = true;
@@ -109,7 +131,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     try {
       // PHASE 1: PREPARE
       logger.print(
-        'MainPage: PHASE 1 - Sending PREPARE for operation $_operationId',
+        'MainPage: PHASE 1 - Sending PREPARE for operation $_operationId (iteration $_currentRepeatIteration)',
       );
       final prepareStatus = await deviceService.sendOperationPrepare(
         _operationId,
@@ -168,7 +190,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         // PHASE 3: GENERATE
         if (success && !cancelled) {
           logger.print(
-            'MainPage: PHASE 3 - Sending GENERATE for operation $_operationId',
+            'MainPage: PHASE 3 - Sending GENERATE for operation $_operationId (iteration $_currentRepeatIteration)',
           );
           state?.resetAllItemStatuses();
 
@@ -209,6 +231,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         }
       }
 
+      // Reset repeat tracking and stop
+      _currentRepeatIteration = 0;
+      _totalRepeats = 1;
       setState(() => _isSending = false);
     }
     // If successful and polling started, completion will be handled by _handleOperationCompletion
@@ -300,7 +325,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     String? errorMessage,
     dynamic state,
   ) async {
-    logger.print('MainPage: Handling operation completion - success: $success');
+    logger.print(
+      'MainPage: Handling operation completion - success: $success (iteration $_currentRepeatIteration/$_totalRepeats)',
+    );
 
     _pollingTimer?.cancel();
     final deviceService = DeviceServiceProvider.of(context);
@@ -311,7 +338,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     final errorColor = Theme.of(context).colorScheme.error;
 
     if (success) {
-      logger.print('MainPage: Operation completed successfully');
+      logger.print(
+        'MainPage: Iteration $_currentRepeatIteration/$_totalRepeats completed successfully',
+      );
 
       // Mark all items as completed
       final sequence = state?.getSequence() ?? [];
@@ -319,31 +348,75 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         state?.updateItemStatus(i, ItemStatus.completed);
       }
 
-      final operationIdStr = _operationId.toString();
-      _saveOperation(operationIdStr);
-      deviceService.addNotification(lang.operationCompletedSuccessfully);
+      // Check if we need to do more iterations
+      if (_currentRepeatIteration < _totalRepeats) {
+        // Show notification for completed iteration
+        final iterationMessage =
+            'Iteration $_currentRepeatIteration/$_totalRepeats completed';
+        deviceService.addNotification(iterationMessage);
+        logger.print('MainPage: Starting next iteration...');
 
-      // Increment operation ID for next operation (1-9999, wrap around)
-      _operationId = (_operationId % 9999) + 1;
-      logger.print('MainPage: Next operation ID will be $_operationId');
+        // Increment iteration counter
+        _currentRepeatIteration++;
+
+        // Wait a brief moment before starting next iteration
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Execute next iteration with same operation ID
+        if (_isSending) {
+          await _executeIteration(state, sequence);
+        }
+      } else {
+        // All iterations completed - save and finish
+        logger.print(
+          'MainPage: All $_totalRepeats iterations completed successfully',
+        );
+
+        final operationIdStr = _operationId.toString();
+        _saveOperation(operationIdStr);
+        deviceService.addNotification(
+          'Operation completed: $_totalRepeats iteration${_totalRepeats > 1 ? 's' : ''}',
+        );
+
+        // Reset repeat tracking
+        _currentRepeatIteration = 0;
+        _totalRepeats = 1;
+
+        // Increment operation ID for next operation (1-9999, wrap around)
+        _operationId = (_operationId % 9999) + 1;
+        logger.print('MainPage: Next operation ID will be $_operationId');
+
+        setState(() => _isSending = false);
+      }
     } else {
-      logger.print('MainPage: Operation failed: $errorMessage');
+      // Operation failed
+      logger.print(
+        'MainPage: Iteration $_currentRepeatIteration/$_totalRepeats failed: $errorMessage',
+      );
       state?.resetAllItemStatuses();
       final displayMessage = errorMessage ?? lang.operationFailedCheckDevice;
-      deviceService.addNotification(lang.operationFailedWithErrors);
+      deviceService.addNotification(
+        'Operation failed at iteration $_currentRepeatIteration/$_totalRepeats',
+      );
 
       if (context.mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text(displayMessage), backgroundColor: errorColor),
         );
       }
-    }
 
-    setState(() => _isSending = false);
+      // Reset repeat tracking
+      _currentRepeatIteration = 0;
+      _totalRepeats = 1;
+
+      setState(() => _isSending = false);
+    }
   }
 
   void _stopOperation() async {
-    logger.print('MainPage: Stopping operation');
+    logger.print(
+      'MainPage: Stopping operation (was at iteration $_currentRepeatIteration/$_totalRepeats)',
+    );
 
     _pollingTimer?.cancel();
     setState(() => _isSending = false);
@@ -353,6 +426,10 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
     final deviceService = DeviceServiceProvider.of(context);
     deviceService.resetOperationState();
+
+    // Reset repeat tracking
+    _currentRepeatIteration = 0;
+    _totalRepeats = 1;
 
     final lang = AppLocalizations.of(context)!;
     final stoppedMessage = lang.operationStopped;

@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:hexagenapp/src/core/theme/freq.dart';
 import 'package:hexagenapp/src/core/utils/theme.dart';
-import 'package:hexagenapp/src/pages/main.dart';
+import 'package:hexagenapp/src/pages/layout.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
