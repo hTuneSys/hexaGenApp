@@ -332,6 +332,12 @@ abstract class AppLocalizations {
   /// **'Unknown command'**
   String get unknownCommand;
 
+  /// No description provided for @operationStepsFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation steps full (max 64)'**
+  String get operationStepsFull;
+
   /// No description provided for @deviceNoDeviceConnected.
   ///
   /// In en, this message translates to:

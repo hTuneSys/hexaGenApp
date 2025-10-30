@@ -134,6 +134,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unknownCommand => 'Unknown command';
 
   @override
+  String get operationStepsFull => 'Operation steps full (max 64)';
+
+  @override
   String get deviceNoDeviceConnected => 'No Device Connected';
 
   @override

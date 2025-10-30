@@ -5,22 +5,32 @@ import 'dart:typed_data';
 import 'package:hexagenapp/src/core/sysex/sysex.dart';
 
 /// AT Command types
-enum ATCommandType { version, freq, setRgb, reset, fwUpdate }
+enum ATCommandType { version, freq, setRgb, reset, fwUpdate, operation }
 
 /// AT Command class for building commands generically
 class ATCommand {
   final int id;
   final ATCommandType type;
   final List<String> params;
+  final bool isQuery;
 
-  ATCommand(this.id, this.type, this.params);
+  ATCommand(this.id, this.type, this.params, {this.isQuery = false});
 
   /// Compile the command to string
+  /// Query format: AT+COMMAND?
+  /// Command with params: AT+COMMAND=id#PARAM1#PARAM2...
+  /// Command without params: AT+COMMAND=id
   String compile() {
     final name = type.name.toUpperCase();
-    if (type == ATCommandType.version) {
+
+    if (isQuery) {
+      // Query format: AT+COMMAND?
       return 'AT+$name?';
+    } else if (params.isEmpty) {
+      // Command without params: AT+COMMAND=id
+      return 'AT+$name=$id';
     } else {
+      // Command with params: AT+COMMAND=id#PARAM1#PARAM2...
       final paramStr = [id.toString(), ...params].join('#');
       return 'AT+$name=$paramStr';
     }
@@ -33,7 +43,22 @@ class ATCommand {
 
   /// Factory for version query
   factory ATCommand.version() {
-    return ATCommand(0, ATCommandType.version, []);
+    return ATCommand(0, ATCommandType.version, [], isQuery: true);
+  }
+
+  /// Factory for operation query (AT+OPERATION?)
+  factory ATCommand.operationQuery() {
+    return ATCommand(0, ATCommandType.operation, [], isQuery: true);
+  }
+
+  /// Factory for operation prepare (AT+OPERATION=id#PREPARE)
+  factory ATCommand.operationPrepare(int id) {
+    return ATCommand(id, ATCommandType.operation, ['PREPARE']);
+  }
+
+  /// Factory for operation generate (AT+OPERATION=id#GENERATE)
+  factory ATCommand.operationGenerate(int id) {
+    return ATCommand(id, ATCommandType.operation, ['GENERATE']);
   }
 
   /// Factory for freq command
@@ -53,12 +78,12 @@ class ATCommand {
     ]);
   }
 
-  /// Factory for reset command
+  /// Factory for reset command (AT+RESET=id)
   factory ATCommand.reset(int id) {
     return ATCommand(id, ATCommandType.reset, []);
   }
 
-  /// Factory for fwUpdate command
+  /// Factory for fwUpdate command (AT+FWUPDATE=id)
   factory ATCommand.fwUpdate(int id) {
     return ATCommand(id, ATCommandType.fwUpdate, []);
   }
@@ -75,8 +100,12 @@ ATResponse? extractAndParseATResponse(Uint8List data) {
 /// Formats:
 /// AT+VERSION=0#version
 /// AT+ERROR=id#error_code
-/// AT+DONE=id (firmware'de DONE response var, ama command yok)
+/// AT+DONE=id (firmware has DONE response, but no DONE command)
 /// AT+STATUS=0#AVAILABLE or GENERATING
+/// AT+OPERATION=id#PREPARE#COMPLETED
+/// AT+OPERATION=id#GENERATE#COMPLETED
+/// AT+OPERATION=id#GENERATING#stepId
+/// AT+FREQ=stepId#freq#timeMs#COMPLETED
 ATResponse? parseATResponse(String message) {
   final trimmed = message.trim();
   if (!trimmed.startsWith('AT+')) return null;
@@ -96,12 +125,10 @@ ATResponse? parseATResponse(String message) {
   switch (name) {
     case 'VERSION':
       return ATResponse(type: ATResponseType.version, id: id, params: params);
+    case 'OPERATION':
+      return ATResponse(type: ATResponseType.operation, id: id, params: params);
     case 'FREQ':
-      return ATResponse(
-        type: ATResponseType.done,
-        id: id,
-        params: params,
-      ); // Assuming DONE for FREQ
+      return ATResponse(type: ATResponseType.freq, id: id, params: params);
     case 'SETRGB':
       return ATResponse(
         type: ATResponseType.done,
@@ -132,7 +159,7 @@ ATResponse? parseATResponse(String message) {
 }
 
 /// AT Response types
-enum ATResponseType { version, error, done, status }
+enum ATResponseType { version, error, done, status, operation, freq }
 
 /// Device status from periodic STATUS messages
 enum DeviceStatus { available, generating }
@@ -184,4 +211,45 @@ class ATResponse {
   DeviceStatus get status => params.isNotEmpty && params[0] == 'AVAILABLE'
       ? DeviceStatus.available
       : DeviceStatus.generating;
+
+  /// Operation status getter
+  /// Returns the actual operation status based on response format:
+  /// - AT+OPERATION=id#PREPARE#COMPLETED -> returns "COMPLETED"
+  /// - AT+OPERATION=id#GENERATE#COMPLETED -> returns "COMPLETED"
+  /// - AT+OPERATION=id#GENERATING#stepId -> returns "GENERATING"
+  String get operationStatus {
+    if (params.isEmpty) return '';
+
+    // If second param is COMPLETED, that's the status
+    if (params.length > 1 && params[1] == 'COMPLETED') {
+      return 'COMPLETED';
+    }
+
+    // Otherwise return first param (PREPARE, GENERATE, GENERATING, etc.)
+    return params[0];
+  }
+
+  /// Step ID for GENERATING status (AT+OPERATION=id#GENERATING#stepId)
+  int? get operationStepId {
+    if (params.length > 1 && params[0] == 'GENERATING') {
+      return int.tryParse(params[1]);
+    }
+    return null;
+  }
+
+  /// Check if FREQ command completed (AT+FREQ=stepId#freq#timeMs#COMPLETED)
+  bool get freqCompleted {
+    if (type == ATResponseType.freq && params.length >= 3) {
+      return params[2] == 'COMPLETED';
+    }
+    return false;
+  }
+
+  /// Check if OPERATION command completed
+  bool get operationCompleted {
+    if (type == ATResponseType.operation && params.isNotEmpty) {
+      return params.contains('COMPLETED');
+    }
+    return false;
+  }
 }

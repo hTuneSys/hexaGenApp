@@ -54,24 +54,11 @@ class _SettingsPageState extends State<SettingsPage> {
         // Scroll to bottom when logs update
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-        return RefreshIndicator(
-          onRefresh: deviceService.refresh,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: _buildTopCard(
-                  context,
-                  lang,
-                  storageService,
-                  deviceService,
-                ),
-              ),
-              SliverFillRemaining(
-                hasScrollBody: true,
-                child: _buildLogMonitorCard(context, lang),
-              ),
-            ],
-          ),
+        return Column(
+          children: [
+            _buildTopCard(context, lang, storageService, deviceService),
+            Expanded(child: _buildLogMonitorCard(context, lang)),
+          ],
         );
       },
     );

@@ -12,6 +12,7 @@ enum AppError {
   paramValue,
   notAQuery,
   unknownCommand,
+  operationStepsFull,
 }
 
 /// Extension to get error code for each error type
@@ -37,6 +38,8 @@ extension AppErrorExtension on AppError {
         return 'E001008';
       case AppError.unknownCommand:
         return 'E001009';
+      case AppError.operationStepsFull:
+        return 'E001010';
     }
   }
 
@@ -69,6 +72,8 @@ extension AppErrorExtension on AppError {
         return localizations.notAQuery;
       case AppError.unknownCommand:
         return localizations.unknownCommand;
+      case AppError.operationStepsFull:
+        return localizations.operationStepsFull;
     }
   }
 }

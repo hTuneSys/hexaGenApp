@@ -17,6 +17,8 @@ typedef DeviceResponseCallback =
       AppError? error,
       DeviceStatus? status,
       int? responseId,
+      String? operationStatus,
+      int? operationStepId,
       required bool waiting,
     });
 
@@ -32,7 +34,7 @@ class HexaTuneDeviceManager {
   String? _connectedId;
   bool _waitingForResponse = false;
   Timer? _responseTimeout;
-  final List<int> _sysexBuffer = []; // SysEx mesaj buffer
+  final List<int> _sysexBuffer = []; // SysEx message buffer
 
   DeviceResponseCallback? _responseCallback;
 
@@ -206,10 +208,10 @@ class HexaTuneDeviceManager {
     );
     logger.midi('Received MIDI data: ${bytes.length} bytes');
 
-    // Buffer'a ekle
+    // Add to buffer
     _sysexBuffer.addAll(bytes);
 
-    // F7 (SysEx end) geldi mi kontrol et
+    // Check if F7 (SysEx end) marker received
     final hasEndMarker = _sysexBuffer.contains(0xF7);
 
     if (!hasEndMarker) {
@@ -217,7 +219,7 @@ class HexaTuneDeviceManager {
         'Waiting for more data (buffer: ${_sysexBuffer.length} bytes)',
         category: LogCategory.midi,
       );
-      return; // Daha fazla veri bekle
+      return; // Wait for more data
     }
 
     // Cancel timeout
@@ -284,6 +286,38 @@ class HexaTuneDeviceManager {
           );
           break;
 
+        case ATResponseType.operation:
+          logger.info(
+            'AT Operation: status=${response.operationStatus}, stepId=${response.operationStepId} (id: ${response.id})',
+            category: LogCategory.midi,
+          );
+          final id = int.tryParse(response.id) ?? 0;
+          _notifyResponse(
+            version: null,
+            error: null,
+            status: null,
+            responseId: id,
+            operationStatus: response.operationStatus,
+            operationStepId: response.operationStepId,
+            waiting: false,
+          );
+          break;
+
+        case ATResponseType.freq:
+          logger.info(
+            'AT Freq: completed=${response.freqCompleted} (id: ${response.id})',
+            category: LogCategory.midi,
+          );
+          final id = int.tryParse(response.id) ?? 0;
+          _notifyResponse(
+            version: null,
+            error: null,
+            status: null,
+            responseId: id,
+            waiting: false,
+          );
+          break;
+
         case ATResponseType.done:
           logger.info(
             'AT Done (id: ${response.id})',
@@ -332,6 +366,8 @@ class HexaTuneDeviceManager {
     AppError? error,
     DeviceStatus? status,
     int? responseId,
+    String? operationStatus,
+    int? operationStepId,
     required bool waiting,
   }) {
     _responseCallback?.call(
@@ -339,6 +375,8 @@ class HexaTuneDeviceManager {
       error: error,
       status: status,
       responseId: responseId,
+      operationStatus: operationStatus,
+      operationStepId: operationStepId,
       waiting: waiting,
     );
   }
