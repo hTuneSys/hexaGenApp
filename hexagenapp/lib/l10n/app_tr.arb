@@ -92,6 +92,10 @@
   "themeLight": "Açık",
   "themeDark": "Koyu",
 
+  "simulationMode": "Simülasyon Modu",
+  "simulationModeDescription": "Uygulamayı fiziksel cihaz olmadan test edin",
+  "simulationModeActive": "Simülasyon modu aktif - cihaz gerekmiyor",
+
   "operationCompletedSuccessfully": "Üretim başarıyla tamamlandı",
   "operationStoppedByUser": "İşlem kullanıcı tarafından durduruldu",
   "operationFailedWithErrors": "İşlem hatalarla başarısız oldu",

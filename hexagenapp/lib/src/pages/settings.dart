@@ -122,6 +122,30 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(height: 24),
+            // Simulation mode section
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: Icon(
+                Icons.model_training_outlined,
+                size: 32,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(
+                lang.simulationMode,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              subtitle: Text(
+                lang.simulationModeDescription,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+              value: storageService.simulationMode,
+              onChanged: (bool value) {
+                storageService.setSimulationMode(value);
+              },
+            ),
+            const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
             // Device section

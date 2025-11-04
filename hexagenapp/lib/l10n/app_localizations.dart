@@ -404,6 +404,24 @@ abstract class AppLocalizations {
   /// **'Dark'**
   String get themeDark;
 
+  /// No description provided for @simulationMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulation Mode'**
+  String get simulationMode;
+
+  /// No description provided for @simulationModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Test the app without a physical device'**
+  String get simulationModeDescription;
+
+  /// No description provided for @simulationModeActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulation mode is active - no device required'**
+  String get simulationModeActive;
+
   /// No description provided for @operationCompletedSuccessfully.
   ///
   /// In en, this message translates to:

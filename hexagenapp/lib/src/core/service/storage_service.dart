@@ -7,8 +7,10 @@ import 'package:hexagenapp/src/core/storage/local_storage.dart';
 class StorageService extends ChangeNotifier {
   LocalStorage? _localStorage;
   String _themeMode = 'system';
+  bool _simulationMode = false;
 
   String get themeMode => _themeMode;
+  bool get simulationMode => _simulationMode;
 
   bool get isInitialized => _localStorage != null;
 
@@ -26,6 +28,7 @@ class StorageService extends ChangeNotifier {
   Future<void> initialize() async {
     _localStorage = await LocalStorage.initialize();
     _themeMode = _localStorage!.getThemeMode();
+    _simulationMode = _localStorage!.getSimulationMode();
     notifyListeners();
   }
 
@@ -33,6 +36,13 @@ class StorageService extends ChangeNotifier {
     if (_localStorage == null) return;
     await _localStorage!.setThemeMode(mode);
     _themeMode = mode;
+    notifyListeners();
+  }
+
+  Future<void> setSimulationMode(bool enabled) async {
+    if (_localStorage == null) return;
+    await _localStorage!.setSimulationMode(enabled);
+    _simulationMode = enabled;
     notifyListeners();
   }
 

@@ -92,6 +92,10 @@
   "themeLight": "Light",
   "themeDark": "Dark",
 
+  "simulationMode": "Simulation Mode",
+  "simulationModeDescription": "Test the app without a physical device",
+  "simulationModeActive": "Simulation mode is active - no device required",
+
   "operationCompletedSuccessfully": "Generation completed successfully",
   "operationStoppedByUser": "Operation stopped by user",
   "operationFailedWithErrors": "Operation failed with errors",
