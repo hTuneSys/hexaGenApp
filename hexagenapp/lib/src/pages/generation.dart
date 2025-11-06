@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
-import 'package:hexagenapp/src/core/service/storage_service.dart';
+import 'package:hexagenapp/src/core/service/device_service.dart';
 
 enum ItemStatus { pending, processing, completed, error }
 
@@ -130,12 +130,12 @@ class _GenerationPageState extends State<GenerationPage> {
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
-    final storageService = StorageServiceProvider.of(context);
+    final deviceService = DeviceServiceProvider.of(context);
 
     return Column(
       children: [
         // Simulation mode banner
-        if (storageService.simulationMode)
+        if (!deviceService.isConnected)
           Container(
             color: Theme.of(context).colorScheme.tertiaryContainer,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

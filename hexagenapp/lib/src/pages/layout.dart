@@ -155,7 +155,6 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     final lang = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final errorColor = Theme.of(context).colorScheme.error;
-    final storageService = StorageServiceProvider.of(context);
 
     logger.print(
       'MainPage: === Iteration $_currentRepeatIteration/$_totalRepeats ===',
@@ -168,7 +167,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     bool cancelled = false;
 
     // Check if simulation mode is enabled
-    if (storageService.simulationMode) {
+    if (!deviceService.isConnected) {
       logger.print('MainPage: Running in SIMULATION MODE');
       success = await _executeSimulatedIteration(state, sequence);
       cancelled = !_isSending;
@@ -254,7 +253,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     }
 
     // Handle immediate failures or simulation mode completion
-    if (storageService.simulationMode) {
+    if (!deviceService.isConnected) {
       // Simulation mode: handle completion directly
       if (success && !cancelled) {
         _handleOperationCompletion(true, null, state);
@@ -534,13 +533,14 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     final sequence = state?.getSequence() ?? [];
     final repeatCount = state?.getRepeatCount() ?? 1;
     final storageService = StorageServiceProvider.of(context);
+    final deviceService = DeviceServiceProvider.of(context);
 
     final operation = {
       'id': operationId,
       'timestamp': DateTime.now().toIso8601String(),
       'repeatCount': repeatCount,
       'items': sequence,
-      'isSimulated': storageService.simulationMode,
+      'isSimulated': !deviceService.isConnected,
     };
 
     storageService.saveOperation(operation);
@@ -662,7 +662,6 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
     final deviceService = DeviceServiceProvider.of(context);
-    final storageService = StorageServiceProvider.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -734,11 +733,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         child: Icon(
           _isSending
               ? Symbols.stop
-              : (_generationItemCount > 0 &&
-                        (storageService.simulationMode ||
-                            deviceService.isConnected)
-                    ? Symbols.autoplay
-                    : Symbols.cadence),
+              : (_generationItemCount > 0 ? Symbols.autoplay : Symbols.cadence),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

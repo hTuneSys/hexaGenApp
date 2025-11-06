@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorage {
   static const String _themeKey = 'theme_mode';
-  static const String _simulationModeKey = 'simulation_mode';
 
   final SharedPreferences _prefs;
 
@@ -26,17 +25,6 @@ class LocalStorage {
   /// Set theme mode: 'system', 'light', or 'dark'
   Future<bool> setThemeMode(String mode) async {
     return await _prefs.setString(_themeKey, mode);
-  }
-
-  /// Get simulation mode
-  /// Default is false
-  bool getSimulationMode() {
-    return _prefs.getBool(_simulationModeKey) ?? false;
-  }
-
-  /// Set simulation mode
-  Future<bool> setSimulationMode(bool enabled) async {
-    return await _prefs.setBool(_simulationModeKey, enabled);
   }
 
   static const String _operationsKey = 'saved_operations';
