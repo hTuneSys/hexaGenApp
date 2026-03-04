@@ -6,8 +6,8 @@ import 'dart:typed_data';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:hexagenapp/src/core/error/error.dart';
-import 'package:hexagenapp/src/core/at/at.dart';
-import 'package:hexagenapp/src/core/sysex/sysex.dart';
+import 'package:hexagenapp/src/core/proto/at_command.dart';
+import 'package:hexagenapp/src/core/proto/at_response.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 
 /// Device response callback
@@ -227,32 +227,23 @@ class HexaTuneDeviceManager {
 
     try {
       final bufferedData = Uint8List.fromList(_sysexBuffer);
-      final message = SysEx.extractSysexPayload(bufferedData);
 
       // Clear the buffer
       _sysexBuffer.clear();
 
-      if (message == null) {
+      final response = extractAndParseATResponse(bufferedData);
+
+      if (response == null) {
         logger.warning(
-          'Failed to extract SysEx payload',
+          'Failed to parse AT response from SysEx data',
           category: LogCategory.midi,
         );
         _waitingForResponse = false;
         return;
       }
 
-      logger.midi('Decoded AT response: "$message"');
+      logger.midi('Decoded AT response: type=${response.type}, id=${response.id}');
       _waitingForResponse = false;
-
-      final response = parseATResponse(message);
-
-      if (response == null) {
-        logger.warning(
-          'Unknown AT response format: "$message"',
-          category: LogCategory.midi,
-        );
-        return;
-      }
 
       switch (response.type) {
         case ATResponseType.error:

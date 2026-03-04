@@ -6,7 +6,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:hexagenapp/src/core/device/device.dart';
-import 'package:hexagenapp/src/core/at/at.dart';
+import 'package:hexagenapp/src/core/proto/at_command.dart';
+import 'package:hexagenapp/src/core/proto/at_response.dart';
 import 'package:hexagenapp/src/core/error/error.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 

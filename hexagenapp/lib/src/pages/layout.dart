@@ -12,7 +12,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
-import 'package:hexagenapp/src/core/at/at.dart';
+import 'package:hexagenapp/src/core/proto/at_response.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 import 'package:hexagenapp/src/core/error/error.dart';
 
