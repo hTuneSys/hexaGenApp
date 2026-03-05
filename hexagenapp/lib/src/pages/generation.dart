@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
+import 'package:hexagenapp/src/core/service/device_service.dart';
 
 enum ItemStatus { pending, processing, completed, error }
 
@@ -129,9 +130,34 @@ class _GenerationPageState extends State<GenerationPage> {
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
+    final deviceService = DeviceServiceProvider.of(context);
 
     return Column(
       children: [
+        // Simulation mode banner
+        if (!deviceService.isConnected)
+          Container(
+            color: Theme.of(context).colorScheme.tertiaryContainer,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  Symbols.model_training,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    lang.simulationModeActive,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onTertiaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         // --- Fixed top: Slider + Add frequency ---
         Card(
           margin: EdgeInsets.zero,

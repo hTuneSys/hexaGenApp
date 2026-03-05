@@ -175,6 +175,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get themeDark => 'Koyu';
 
   @override
+  String get simulationMode => 'Simülasyon Modu';
+
+  @override
+  String get simulationModeDescription =>
+      'Uygulamayı fiziksel cihaz olmadan test edin';
+
+  @override
+  String get simulationModeActive => 'Simülasyon modu aktif - cihaz gerekmiyor';
+
+  @override
   String get operationCompletedSuccessfully => 'Üretim başarıyla tamamlandı';
 
   @override

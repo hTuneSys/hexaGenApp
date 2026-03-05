@@ -175,6 +175,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDark => 'Dark';
 
   @override
+  String get simulationMode => 'Simulation Mode';
+
+  @override
+  String get simulationModeDescription =>
+      'Test the app without a physical device';
+
+  @override
+  String get simulationModeActive =>
+      'Simulation mode is active - no device required';
+
+  @override
   String get operationCompletedSuccessfully =>
       'Generation completed successfully';
 

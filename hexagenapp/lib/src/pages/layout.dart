@@ -12,7 +12,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/device_service.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
-import 'package:hexagenapp/src/core/at/at.dart';
+import 'package:hexagenapp/src/core/proto/at_response.dart';
 import 'package:hexagenapp/src/core/service/log_service.dart';
 import 'package:hexagenapp/src/core/error/error.dart';
 
@@ -91,6 +91,44 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     }
   }
 
+  Future<bool> _executeSimulatedIteration(
+    dynamic state,
+    List<Map<String, dynamic>> sequence,
+  ) async {
+    logger.print('MainPage: Starting simulated operation');
+
+    // Simulate each frequency step
+    for (int i = 0; i < sequence.length; i++) {
+      if (!_isSending) {
+        logger.print('MainPage: Simulation cancelled');
+        return false;
+      }
+
+      final item = sequence[i];
+      final timeMs = ((item['seconds'] as double) * 1000).round();
+      final freqHz = item['freqHz'] as int;
+
+      state?.updateItemStatus(i, ItemStatus.processing);
+      logger.print(
+        'MainPage: Simulating stepId=$i freq=$freqHz Hz time=${timeMs}ms',
+      );
+
+      // Wait for the frequency duration
+      await Future.delayed(Duration(milliseconds: timeMs));
+
+      if (!_isSending) {
+        logger.print('MainPage: Simulation cancelled during step $i');
+        return false;
+      }
+
+      state?.updateItemStatus(i, ItemStatus.completed);
+      logger.print('MainPage: Simulated stepId=$i completed');
+    }
+
+    logger.print('MainPage: Simulated iteration completed successfully');
+    return true;
+  }
+
   void _startOperation() async {
     final state = _generationKey.currentState as dynamic;
     final sequence = state?.getSequence() ?? [];
@@ -128,84 +166,126 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     bool success = true;
     bool cancelled = false;
 
-    try {
-      // PHASE 1: PREPARE
-      logger.print(
-        'MainPage: PHASE 1 - Sending PREPARE for operation $_operationId (iteration $_currentRepeatIteration)',
-      );
-      final prepareStatus = await deviceService.sendOperationPrepare(
-        _operationId,
-      );
+    // Check if simulation mode is enabled
+    if (!deviceService.isConnected) {
+      logger.print('MainPage: Running in SIMULATION MODE');
+      success = await _executeSimulatedIteration(state, sequence);
+      cancelled = !_isSending;
+    } else {
+      // Real device operation
+      try {
+        // PHASE 1: PREPARE
+        logger.print(
+          'MainPage: PHASE 1 - Sending PREPARE for operation $_operationId (iteration $_currentRepeatIteration)',
+        );
+        final prepareStatus = await deviceService.sendOperationPrepare(
+          _operationId,
+        );
 
-      if (prepareStatus != CommandStatus.success) {
-        logger.print('MainPage: PREPARE failed with status: $prepareStatus');
-        success = false;
-      } else {
-        logger.print('MainPage: PREPARE completed successfully');
+        if (prepareStatus != CommandStatus.success) {
+          logger.print('MainPage: PREPARE failed with status: $prepareStatus');
+          success = false;
+        } else {
+          logger.print('MainPage: PREPARE completed successfully');
 
-        // PHASE 2: FREQ batch
-        logger.print('MainPage: PHASE 2 - Sending FREQ commands');
-        for (int i = 0; i < sequence.length && success; i++) {
-          if (!_isSending) {
-            cancelled = true;
-            break;
-          }
+          // PHASE 2: FREQ batch
+          logger.print('MainPage: PHASE 2 - Sending FREQ commands');
+          for (int i = 0; i < sequence.length && success; i++) {
+            if (!_isSending) {
+              cancelled = true;
+              break;
+            }
 
-          final item = sequence[i];
-          final freqHz = item['freqHz'] as int;
-          final timeMs = ((item['seconds'] as double) * 1000).round();
-          final stepId = i; // Use list index as stepId
+            final item = sequence[i];
+            final freqHz = item['freqHz'] as int;
+            final timeMs = ((item['seconds'] as double) * 1000).round();
+            final stepId = i; // Use list index as stepId
 
-          state?.updateItemStatus(i, ItemStatus.processing);
-          logger.print(
-            'MainPage: Sending FREQ stepId=$stepId freq=$freqHz Hz time=${timeMs}ms',
-          );
-
-          try {
-            final status = await deviceService.sendFreqCommandForOperation(
-              stepId,
-              freqHz,
-              timeMs,
+            state?.updateItemStatus(i, ItemStatus.processing);
+            logger.print(
+              'MainPage: Sending FREQ stepId=$stepId freq=$freqHz Hz time=${timeMs}ms',
             );
 
-            if (status != CommandStatus.success) {
+            try {
+              final status = await deviceService.sendFreqCommandForOperation(
+                stepId,
+                freqHz,
+                timeMs,
+              );
+
+              if (status != CommandStatus.success) {
+                logger.print(
+                  'MainPage: FREQ stepId=$stepId failed with status: $status',
+                );
+                state?.updateItemStatus(i, ItemStatus.error);
+                success = false;
+                break;
+              }
+
+              logger.print('MainPage: FREQ stepId=$stepId completed');
+              state?.updateItemStatus(i, ItemStatus.completed);
+            } catch (e) {
               logger.print(
-                'MainPage: FREQ stepId=$stepId failed with status: $status',
+                'MainPage: Exception sending FREQ stepId=$stepId: $e',
               );
               state?.updateItemStatus(i, ItemStatus.error);
               success = false;
               break;
             }
+          }
 
-            logger.print('MainPage: FREQ stepId=$stepId completed');
-            state?.updateItemStatus(i, ItemStatus.completed);
-          } catch (e) {
-            logger.print('MainPage: Exception sending FREQ stepId=$stepId: $e');
-            state?.updateItemStatus(i, ItemStatus.error);
-            success = false;
-            break;
+          // PHASE 3: GENERATE
+          if (success && !cancelled) {
+            logger.print(
+              'MainPage: PHASE 3 - Sending GENERATE for operation $_operationId (iteration $_currentRepeatIteration)',
+            );
+            state?.resetAllItemStatuses();
+
+            await deviceService.sendOperationGenerate(_operationId);
+            logger.print('MainPage: GENERATE sent, starting polling');
+            _startPolling(deviceService, state);
+          }
+        }
+      } catch (e) {
+        logger.print('MainPage: Exception in operation: $e');
+        success = false;
+      }
+    }
+
+    // Handle immediate failures or simulation mode completion
+    if (!deviceService.isConnected) {
+      // Simulation mode: handle completion directly
+      if (success && !cancelled) {
+        _handleOperationCompletion(true, null, state);
+      } else {
+        _pollingTimer?.cancel();
+
+        if (cancelled) {
+          logger.print('MainPage: Simulation cancelled');
+          state?.resetAllItemStatuses();
+          deviceService.addNotification(lang.operationStoppedByUser);
+        } else {
+          state?.resetAllItemStatuses();
+          final errorMessage = lang.operationFailedCheckDevice;
+          deviceService.addNotification(lang.operationFailedWithErrors);
+
+          if (context.mounted) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: errorColor,
+              ),
+            );
           }
         }
 
-        // PHASE 3: GENERATE
-        if (success && !cancelled) {
-          logger.print(
-            'MainPage: PHASE 3 - Sending GENERATE for operation $_operationId (iteration $_currentRepeatIteration)',
-          );
-          state?.resetAllItemStatuses();
-
-          await deviceService.sendOperationGenerate(_operationId);
-          logger.print('MainPage: GENERATE sent, starting polling');
-          _startPolling(deviceService, state);
-        }
+        // Reset repeat tracking and stop
+        _currentRepeatIteration = 0;
+        _totalRepeats = 1;
+        setState(() => _isSending = false);
       }
-    } catch (e) {
-      logger.print('MainPage: Exception in operation: $e');
-      success = false;
-    }
-
-    // Handle immediate failures (before polling starts)
-    if (!success || cancelled) {
+    } else if (!success || cancelled) {
+      // Real device mode: handle failures
       _pollingTimer?.cancel();
       deviceService.resetOperationState();
 
@@ -452,15 +532,17 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     final state = _generationKey.currentState as dynamic;
     final sequence = state?.getSequence() ?? [];
     final repeatCount = state?.getRepeatCount() ?? 1;
+    final storageService = StorageServiceProvider.of(context);
+    final deviceService = DeviceServiceProvider.of(context);
 
     final operation = {
       'id': operationId,
       'timestamp': DateTime.now().toIso8601String(),
       'repeatCount': repeatCount,
       'items': sequence,
+      'isSimulated': !deviceService.isConnected,
     };
 
-    final storageService = StorageServiceProvider.of(context);
     storageService.saveOperation(operation);
 
     final lang = AppLocalizations.of(context)!;
@@ -588,7 +670,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         title: Text(lang.appName),
         actions: <Widget>[
           Icon(
-            Symbols.circle,
+            _isSending ? Icons.incomplete_circle : Symbols.circle,
             color: _isSending ? colorScheme.tertiary : colorScheme.error,
           ),
           IconButton(

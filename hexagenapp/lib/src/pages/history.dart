@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:hexagenapp/l10n/app_localizations.dart';
 import 'package:hexagenapp/src/core/service/storage_service.dart';
 import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 class HistoryPage extends StatefulWidget {
   final Function(List<Map<String, dynamic>>, int)? onRegenerate;
@@ -131,6 +132,7 @@ class _OperationCardState extends State<_OperationCard> {
     final items = widget.operation['items'] as List;
     final repeatCount = widget.operation['repeatCount'] as int;
     final timestamp = widget.operation['timestamp'] as String;
+    final isSimulated = widget.operation['isSimulated'] as bool? ?? false;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -161,6 +163,15 @@ class _OperationCardState extends State<_OperationCard> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
+                      if (isSimulated)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Icon(
+                            Symbols.model_training,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.tertiary,
+                          ),
+                        ),
                       IconButton(
                         icon: const Icon(Icons.refresh),
                         onPressed: _handleRegenerate,
