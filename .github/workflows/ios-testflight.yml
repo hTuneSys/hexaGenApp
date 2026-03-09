@@ -68,7 +68,7 @@ jobs:
 
       # --- Download & install provisioning profiles from App Store Connect ---
       - name: Download provisioning profile(s)
-        uses: Apple-Actions/download-provisioning-profiles@v4
+        uses: Apple-Actions/download-provisioning-profiles@v5
         with:
           bundle-id: ${{ env.BUNDLE_ID }}
           profile-type: ${{ env.PROFILE_TYPE }}
