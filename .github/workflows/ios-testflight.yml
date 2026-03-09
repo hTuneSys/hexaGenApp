@@ -44,7 +44,7 @@ jobs:
       # Speed-ups: caches (optional)
       # -----------------------------
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cocoapods
           key: ${{ runner.os }}-cocoapods-${{ hashFiles('hexagenapp/ios/Podfile.lock') }}
@@ -52,7 +52,7 @@ jobs:
             ${{ runner.os }}-cocoapods-
 
       - name: Cache Flutter pub
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('hexagenapp/pubspec.lock') }}
